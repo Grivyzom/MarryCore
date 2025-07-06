@@ -4,6 +4,7 @@ import gc.grivyzom.marryCore.MarryCore;
 import gc.grivyzom.marryCore.items.ItemManager;
 import gc.grivyzom.marryCore.utils.MessageUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Player;
 
 /**
  * Comandos administrativos para MarryCore.
+ * Actualizado con funciones de placeholders.
  *
  * @author Brocolitx
  * @version 0.0.1
@@ -104,6 +106,22 @@ public class AdminCommand implements CommandExecutor {
                 showPlayerInfo(sender, args[1]);
                 break;
 
+            case "placeholders":
+                handlePlaceholderCommands(sender, args);
+                break;
+
+            case "test":
+                if (args.length < 2) {
+                    sender.sendMessage("§cUso: /marrycore test <placeholder> [jugador]");
+                    return true;
+                }
+                testPlaceholder(sender, args);
+                break;
+
+            case "debug":
+                showDebugInfo(sender);
+                break;
+
             case "help":
                 showHelp(sender);
                 break;
@@ -121,12 +139,208 @@ public class AdminCommand implements CommandExecutor {
             plugin.reloadConfigs();
             itemManager.reloadItemsConfig();
             messageUtils.sendMessage(sender, "general.reload-success");
+
+            // Mostrar estado de placeholders después de recargar
+            if (plugin.getPlaceholderManager() != null) {
+                boolean enabled = plugin.getPlaceholderManager().isPlaceholderAPIEnabled();
+                sender.sendMessage("§aPlaceholders: " + (enabled ? "§2✓ Habilitados" : "§c✗ Deshabilitados"));
+            }
         } catch (Exception e) {
             plugin.getLogger().severe("Error al recargar configuración: " + e.getMessage());
             sender.sendMessage("§cError al recargar la configuración.");
         }
     }
 
+    private void handlePlaceholderCommands(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUso: /marrycore placeholders <info|list|test>");
+            return;
+        }
+
+        String placeholderSubCommand = args[1].toLowerCase();
+
+        switch (placeholderSubCommand) {
+            case "info":
+                if (plugin.getPlaceholderManager() != null) {
+                    plugin.getPlaceholderManager().showPlaceholderInfo(sender);
+                } else {
+                    sender.sendMessage("§cSistema de placeholders no inicializado.");
+                }
+                break;
+
+            case "list":
+                int page = 1;
+                if (args.length > 2) {
+                    try {
+                        page = Integer.parseInt(args[2]);
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage("§cNúmero de página inválido.");
+                        return;
+                    }
+                }
+
+                if (plugin.getPlaceholderManager() != null) {
+                    plugin.getPlaceholderManager().listAllPlaceholders(sender, page);
+                } else {
+                    sender.sendMessage("§cSistema de placeholders no inicializado.");
+                }
+                break;
+
+            case "test":
+                if (args.length < 3) {
+                    sender.sendMessage("§cUso: /marrycore placeholders test <placeholder> [jugador]");
+                    return;
+                }
+                testPlaceholder(sender, args);
+                break;
+
+            case "debug":
+                showPlaceholderDebug(sender);
+                break;
+
+            default:
+                sender.sendMessage("§cSubcomando inválido. Usa: info, list, test, debug");
+                break;
+        }
+    }
+
+    private void testPlaceholder(CommandSender sender, String[] args) {
+        if (plugin.getPlaceholderManager() == null || !plugin.getPlaceholderManager().isPlaceholderAPIEnabled()) {
+            sender.sendMessage("§cPlaceholderAPI no está habilitado.");
+            return;
+        }
+
+        String placeholder = args.length > 1 ? args[1] : args[1];
+        Player targetPlayer = null;
+
+        // Determinar jugador objetivo
+        if (args.length > 2) {
+            targetPlayer = Bukkit.getPlayer(args[2]);
+            if (targetPlayer == null) {
+                sender.sendMessage("§cJugador no encontrado: " + args[2]);
+                return;
+            }
+        } else if (sender instanceof Player) {
+            targetPlayer = (Player) sender;
+        } else {
+            sender.sendMessage("§cDebes especificar un jugador al ejecutar desde consola.");
+            return;
+        }
+
+        // Asegurar formato correcto del placeholder
+        if (!placeholder.startsWith("%")) {
+            placeholder = "%" + placeholder;
+        }
+        if (!placeholder.endsWith("%")) {
+            placeholder = placeholder + "%";
+        }
+
+        // Verificar si es un placeholder de MarryCore
+        if (!placeholder.startsWith("%marry_")) {
+            sender.sendMessage("§cEste comando solo prueba placeholders de MarryCore (%marry_*)");
+            return;
+        }
+
+        try {
+            // Probar el placeholder
+            String result = plugin.getPlaceholderManager().replacePlaceholders(targetPlayer, placeholder);
+
+            sender.sendMessage("§a§l===== PRUEBA DE PLACEHOLDER =====");
+            sender.sendMessage("§eJugador: §f" + targetPlayer.getName());
+            sender.sendMessage("§ePlaceholder: §f" + placeholder);
+            sender.sendMessage("§eResultado: §f" + (result != null ? result : "§cnull"));
+
+            // Mostrar ayuda del placeholder si está disponible
+            String help = plugin.getPlaceholderManager().getPlaceholderHelp(placeholder);
+            if (!help.equals("Placeholder no reconocido o sin ayuda disponible")) {
+                sender.sendMessage("§eDescripción: §7" + help);
+            }
+
+            sender.sendMessage("§a§l===============================");
+
+        } catch (Exception e) {
+            sender.sendMessage("§cError al probar placeholder: " + e.getMessage());
+            plugin.getLogger().warning("Error en prueba de placeholder: " + e.getMessage());
+        }
+    }
+
+    private void showPlaceholderDebug(CommandSender sender) {
+        if (plugin.getPlaceholderManager() == null) {
+            sender.sendMessage("§cSistema de placeholders no inicializado.");
+            return;
+        }
+
+        sender.sendMessage("§a§l===== DEBUG DE PLACEHOLDERS =====");
+
+        String debugInfo = plugin.getPlaceholderManager().getDebugInfo();
+        String[] lines = debugInfo.split("\n");
+
+        for (String line : lines) {
+            sender.sendMessage("§e" + line);
+        }
+
+        // Información adicional del plugin
+        sender.sendMessage("§ePlugin Version: §f" + plugin.getDescription().getVersion());
+        sender.sendMessage("§eSpigot Version: §f" + Bukkit.getVersion());
+
+        // Verificar si PlaceholderAPI está presente
+        boolean papiPresent = Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
+        sender.sendMessage("§ePlaceholderAPI Present: §f" + (papiPresent ? "§aYes" : "§cNo"));
+
+        if (papiPresent) {
+            try {
+                String papiVersion = Bukkit.getPluginManager().getPlugin("PlaceholderAPI").getDescription().getVersion();
+                sender.sendMessage("§ePlaceholderAPI Version: §f" + papiVersion);
+            } catch (Exception e) {
+                sender.sendMessage("§ePlaceholderAPI Version: §cError retrieving");
+            }
+        }
+
+        sender.sendMessage("§a§l===============================");
+    }
+
+    private void showDebugInfo(CommandSender sender) {
+        sender.sendMessage("§a§l===== DEBUG DE MARRYCORE =====");
+        sender.sendMessage("§eVersión del Plugin: §f" + plugin.getDescription().getVersion());
+        sender.sendMessage("§eVersión de Minecraft: §f" + Bukkit.getVersion());
+        sender.sendMessage("§eJugadores Online: §f" + Bukkit.getOnlinePlayers().size());
+
+        // Estado de la base de datos
+        boolean dbConnected = plugin.isDatabaseConnected();
+        sender.sendMessage("§eBase de Datos: " + (dbConnected ? "§aConectada" : "§cDesconectada"));
+
+        // Estado de placeholders
+        if (plugin.getPlaceholderManager() != null) {
+            boolean placeholdersEnabled = plugin.getPlaceholderManager().isPlaceholderAPIEnabled();
+            sender.sendMessage("§ePlaceholders: " + (placeholdersEnabled ? "§aHabilitados" : "§cDeshabilitados"));
+        } else {
+            sender.sendMessage("§ePlaceholders: §cNo Inicializados");
+        }
+
+        // Información de memoria
+        Runtime runtime = Runtime.getRuntime();
+        long maxMemory = runtime.maxMemory() / 1024 / 1024;
+        long totalMemory = runtime.totalMemory() / 1024 / 1024;
+        long freeMemory = runtime.freeMemory() / 1024 / 1024;
+        long usedMemory = totalMemory - freeMemory;
+
+        sender.sendMessage("§eMemoria Usada: §f" + usedMemory + "MB / " + maxMemory + "MB");
+
+        // Estadísticas del sistema de matrimonio
+        try {
+            int[] stats = plugin.getDatabaseManager().getSystemStats();
+            sender.sendMessage("§eTotal Jugadores: §f" + stats[0]);
+            sender.sendMessage("§eSolteros: §f" + stats[1]);
+            sender.sendMessage("§eComprometidos: §f" + stats[2]);
+            sender.sendMessage("§eCasados: §f" + stats[3]);
+        } catch (Exception e) {
+            sender.sendMessage("§eEstadísticas: §cError al obtener");
+        }
+
+        sender.sendMessage("§a§l=============================");
+    }
+
+    // Métodos existentes del AdminCommand...
     private void forceEngagement(CommandSender sender, String player1Name, String player2Name) {
         Player player1 = Bukkit.getPlayer(player1Name);
         Player player2 = Bukkit.getPlayer(player2Name);
@@ -340,6 +554,15 @@ public class AdminCommand implements CommandExecutor {
                     sender.sendMessage("§eSolteros: §f" + stats[1]);
                     sender.sendMessage("§eComprometidos: §f" + stats[2]);
                     sender.sendMessage("§eCasados: §f" + stats[3]);
+
+                    // Calcular porcentajes
+                    if (stats[0] > 0) {
+                        double marriedPercentage = (stats[3] * 100.0) / stats[0];
+                        double engagedPercentage = (stats[2] * 100.0) / stats[0];
+                        sender.sendMessage("§ePorcentaje casados: §f" + String.format("%.1f%%", marriedPercentage));
+                        sender.sendMessage("§ePorcentaje comprometidos: §f" + String.format("%.1f%%", engagedPercentage));
+                    }
+
                     sender.sendMessage("§a§l======================================");
                 });
 
@@ -402,6 +625,19 @@ public class AdminCommand implements CommandExecutor {
 
                     sender.sendMessage("§eCreado: §f" + playerData.getCreatedAt());
                     sender.sendMessage("§eÚltima actualización: §f" + playerData.getUpdatedAt());
+
+                    // Mostrar placeholders de prueba si están habilitados
+                    if (plugin.getPlaceholderManager() != null && plugin.getPlaceholderManager().isPlaceholderAPIEnabled()) {
+                        Player onlinePlayer = Bukkit.getPlayer(playerData.getUuid());
+                        if (onlinePlayer != null) {
+                            sender.sendMessage("§a--- Placeholders de Prueba ---");
+                            String status = plugin.getPlaceholderManager().replacePlaceholders(onlinePlayer, "%marry_status%");
+                            String name = plugin.getPlaceholderManager().replacePlaceholders(onlinePlayer, "%marry_name%");
+                            sender.sendMessage("§eEstado (placeholder): §f" + status);
+                            sender.sendMessage("§ePareja (placeholder): §f" + name);
+                        }
+                    }
+
                     sender.sendMessage("§a§l==========================================");
                 });
 
@@ -425,6 +661,14 @@ public class AdminCommand implements CommandExecutor {
         sender.sendMessage("§e/marrycore stats §7- Ver estadísticas del sistema");
         sender.sendMessage("§e/marrycore repair §7- Reparar base de datos");
         sender.sendMessage("§e/marrycore info <jugador> §7- Ver información de jugador");
+        sender.sendMessage("§6--- COMANDOS DE PLACEHOLDERS ---");
+        sender.sendMessage("§e/marrycore placeholders info §7- Información de placeholders");
+        sender.sendMessage("§e/marrycore placeholders list [página] §7- Listar placeholders");
+        sender.sendMessage("§e/marrycore placeholders test <placeholder> [jugador] §7- Probar placeholder");
+        sender.sendMessage("§e/marrycore placeholders debug §7- Debug de placeholders");
+        sender.sendMessage("§6--- OTROS COMANDOS ---");
+        sender.sendMessage("§e/marrycore test <placeholder> [jugador] §7- Probar placeholder específico");
+        sender.sendMessage("§e/marrycore debug §7- Información de debug general");
         sender.sendMessage("§a§l===============================================");
     }
 }

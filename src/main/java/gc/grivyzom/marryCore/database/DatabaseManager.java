@@ -24,6 +24,7 @@ public class DatabaseManager {
 
     /**
      * Obtiene la conexión a la base de datos desde el plugin principal
+     *
      * @return Connection activa
      */
     private Connection getConnection() {
@@ -32,6 +33,7 @@ public class DatabaseManager {
 
     /**
      * Obtiene los datos de un jugador, creándolos si no existen
+     *
      * @param uuid UUID del jugador
      * @return MarryPlayer con los datos del jugador
      * @throws SQLException Si hay error en la base de datos
@@ -64,6 +66,7 @@ public class DatabaseManager {
 
     /**
      * Obtiene los datos de un jugador por nombre de usuario
+     *
      * @param username Nombre del jugador
      * @return MarryPlayer con los datos del jugador, null si no existe
      * @throws SQLException Si hay error en la base de datos
@@ -94,7 +97,8 @@ public class DatabaseManager {
 
     /**
      * Crea un nuevo jugador en la base de datos
-     * @param uuid UUID del jugador
+     *
+     * @param uuid     UUID del jugador
      * @param username Nombre del jugador
      * @return MarryPlayer creado
      * @throws SQLException Si hay error en la base de datos
@@ -117,7 +121,8 @@ public class DatabaseManager {
 
     /**
      * Actualiza el nombre de usuario de un jugador
-     * @param uuid UUID del jugador
+     *
+     * @param uuid     UUID del jugador
      * @param username Nuevo nombre de usuario
      * @throws SQLException Si hay error en la base de datos
      */
@@ -134,7 +139,8 @@ public class DatabaseManager {
 
     /**
      * Actualiza el estado civil de un jugador
-     * @param uuid UUID del jugador
+     *
+     * @param uuid   UUID del jugador
      * @param status Nuevo estado civil
      * @throws SQLException Si hay error en la base de datos
      */
@@ -151,7 +157,8 @@ public class DatabaseManager {
 
     /**
      * Actualiza la pareja de un jugador
-     * @param uuid UUID del jugador
+     *
+     * @param uuid        UUID del jugador
      * @param partnerUuid UUID de la pareja (null para remover)
      * @throws SQLException Si hay error en la base de datos
      */
@@ -168,6 +175,7 @@ public class DatabaseManager {
 
     /**
      * Crea un compromiso entre dos jugadores
+     *
      * @param player1Uuid UUID del primer jugador
      * @param player2Uuid UUID del segundo jugador
      * @throws SQLException Si hay error en la base de datos
@@ -207,6 +215,7 @@ public class DatabaseManager {
 
     /**
      * Convierte un compromiso en matrimonio
+     *
      * @param player1Uuid UUID del primer jugador
      * @param player2Uuid UUID del segundo jugador
      * @throws SQLException Si hay error en la base de datos
@@ -249,6 +258,7 @@ public class DatabaseManager {
 
     /**
      * Procesa un divorcio entre dos jugadores
+     *
      * @param player1Uuid UUID del primer jugador
      * @param player2Uuid UUID del segundo jugador
      * @throws SQLException Si hay error en la base de datos
@@ -295,6 +305,7 @@ public class DatabaseManager {
 
     /**
      * Obtiene el ID del matrimonio entre dos jugadores
+     *
      * @param player1Uuid UUID del primer jugador
      * @param player2Uuid UUID del segundo jugador
      * @return ID del matrimonio, -1 si no existe
@@ -325,9 +336,10 @@ public class DatabaseManager {
 
     /**
      * Programa una ceremonia de matrimonio
-     * @param marriageId ID del matrimonio
+     *
+     * @param marriageId  ID del matrimonio
      * @param weddingDate Fecha de la ceremonia
-     * @param location Ubicación de la ceremonia
+     * @param location    Ubicación de la ceremonia
      * @throws SQLException Si hay error en la base de datos
      */
     public void scheduleWedding(int marriageId, Timestamp weddingDate, String location) throws SQLException {
@@ -348,9 +360,10 @@ public class DatabaseManager {
 
     /**
      * Añade un invitado a una ceremonia
+     *
      * @param marriageId ID del matrimonio
-     * @param guestUuid UUID del invitado
-     * @param invitedBy UUID de quien invita
+     * @param guestUuid  UUID del invitado
+     * @param invitedBy  UUID de quien invita
      * @throws SQLException Si hay error en la base de datos
      */
     public void addGuest(int marriageId, UUID guestUuid, UUID invitedBy) throws SQLException {
@@ -367,8 +380,9 @@ public class DatabaseManager {
 
     /**
      * Remueve un invitado de una ceremonia
+     *
      * @param marriageId ID del matrimonio
-     * @param guestUuid UUID del invitado
+     * @param guestUuid  UUID del invitado
      * @throws SQLException Si hay error en la base de datos
      */
     public void removeGuest(int marriageId, UUID guestUuid) throws SQLException {
@@ -384,9 +398,10 @@ public class DatabaseManager {
 
     /**
      * Actualiza el estado de confirmación de un invitado
+     *
      * @param marriageId ID del matrimonio
-     * @param guestUuid UUID del invitado
-     * @param status Nuevo estado (invitado, confirmado, rechazado)
+     * @param guestUuid  UUID del invitado
+     * @param status     Nuevo estado (invitado, confirmado, rechazado)
      * @throws SQLException Si hay error en la base de datos
      */
     public void updateGuestStatus(int marriageId, UUID guestUuid, String status) throws SQLException {
@@ -403,6 +418,7 @@ public class DatabaseManager {
 
     /**
      * Verifica si una fecha está disponible para ceremonia
+     *
      * @param weddingDate Fecha a verificar
      * @return true si está disponible
      * @throws SQLException Si hay error en la base de datos
@@ -429,6 +445,7 @@ public class DatabaseManager {
 
     /**
      * Obtiene el número de invitados confirmados para una ceremonia
+     *
      * @param marriageId ID del matrimonio
      * @return Número de invitados confirmados
      * @throws SQLException Si hay error en la base de datos
@@ -451,8 +468,9 @@ public class DatabaseManager {
 
     /**
      * Verifica si un jugador ya está invitado a una ceremonia
+     *
      * @param marriageId ID del matrimonio
-     * @param guestUuid UUID del potencial invitado
+     * @param guestUuid  UUID del potencial invitado
      * @return true si ya está invitado
      * @throws SQLException Si hay error en la base de datos
      */
@@ -475,6 +493,7 @@ public class DatabaseManager {
 
     /**
      * Elimina completamente los datos de un jugador (para uso administrativo)
+     *
      * @param uuid UUID del jugador
      * @throws SQLException Si hay error en la base de datos
      */
@@ -516,6 +535,7 @@ public class DatabaseManager {
 
     /**
      * Obtiene estadísticas generales del sistema
+     *
      * @return Array con [total_jugadores, total_solteros, total_comprometidos, total_casados]
      * @throws SQLException Si hay error en la base de datos
      */
@@ -532,7 +552,7 @@ public class DatabaseManager {
         try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return new int[] {
+                    return new int[]{
                             rs.getInt("total"),
                             rs.getInt("solteros"),
                             rs.getInt("comprometidos"),
@@ -547,6 +567,7 @@ public class DatabaseManager {
 
     /**
      * Verifica la integridad de la base de datos y repara inconsistencias
+     *
      * @return Número de registros reparados
      * @throws SQLException Si hay error en la base de datos
      */
@@ -570,5 +591,484 @@ public class DatabaseManager {
         }
 
         return repairedCount;
+    }
+// Métodos adicionales para DatabaseManager.java
+// Añadir estos métodos a la clase DatabaseManager existente
+
+    /**
+     * Obtiene la fecha de boda de un matrimonio específico
+     *
+     * @param marriageId ID del matrimonio
+     * @return Timestamp de la fecha de boda, null si no existe
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public Timestamp getWeddingDateByMarriageId(int marriageId) throws SQLException {
+        String query = "SELECT wedding_date FROM marry_marriages WHERE id = ? AND status = 'casado'";
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setInt(1, marriageId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getTimestamp("wedding_date");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtiene la fecha de ceremonia programada de un matrimonio
+     *
+     * @param marriageId ID del matrimonio
+     * @return Timestamp de la fecha de ceremonia, null si no existe
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public Timestamp getCeremonyDateByMarriageId(int marriageId) throws SQLException {
+        String query = "SELECT wedding_date FROM marry_marriages WHERE id = ? AND status = 'comprometido'";
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setInt(1, marriageId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getTimestamp("wedding_date");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtiene la ubicación de ceremonia de un matrimonio
+     *
+     * @param marriageId ID del matrimonio
+     * @return Ubicación de la ceremonia, null si no existe
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public String getCeremonyLocationByMarriageId(int marriageId) throws SQLException {
+        String query = "SELECT ceremony_location FROM marry_marriages WHERE id = ?";
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setInt(1, marriageId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("ceremony_location");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtiene la fecha de compromiso de un matrimonio
+     *
+     * @param marriageId ID del matrimonio
+     * @return Timestamp de la fecha de compromiso
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public Timestamp getEngagementDateByMarriageId(int marriageId) throws SQLException {
+        String query = "SELECT engagement_date FROM marry_marriages WHERE id = ?";
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setInt(1, marriageId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getTimestamp("engagement_date");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtiene la lista de invitados de un matrimonio
+     *
+     * @param marriageId ID del matrimonio
+     * @param status     Estado de la invitación (null para todos)
+     * @return Lista de UUIDs de invitados
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public java.util.List<java.util.UUID> getGuestsByMarriageId(int marriageId, String status) throws SQLException {
+        java.util.List<java.util.UUID> guests = new java.util.ArrayList<>();
+
+        String query = "SELECT guest_uuid FROM marry_guests WHERE marriage_id = ?";
+        if (status != null) {
+            query += " AND status = ?";
+        }
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setInt(1, marriageId);
+            if (status != null) {
+                stmt.setString(2, status);
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    guests.add(java.util.UUID.fromString(rs.getString("guest_uuid")));
+                }
+            }
+        }
+
+        return guests;
+    }
+
+    /**
+     * Obtiene los nombres de los invitados de un matrimonio
+     *
+     * @param marriageId ID del matrimonio
+     * @param status     Estado de la invitación (null para todos)
+     * @param limit      Límite de resultados (-1 para sin límite)
+     * @return Lista de nombres de invitados
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public java.util.List<String> getGuestNamesByMarriageId(int marriageId, String status, int limit) throws SQLException {
+        java.util.List<String> guestNames = new java.util.ArrayList<>();
+
+        String query = """
+        SELECT p.username 
+        FROM marry_guests g 
+        INNER JOIN marry_players p ON g.guest_uuid = p.uuid 
+        WHERE g.marriage_id = ?
+    """;
+
+        if (status != null) {
+            query += " AND g.status = ?";
+        }
+
+        if (limit > 0) {
+            query += " LIMIT ?";
+        }
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            int paramIndex = 1;
+            stmt.setInt(paramIndex++, marriageId);
+
+            if (status != null) {
+                stmt.setString(paramIndex++, status);
+            }
+
+            if (limit > 0) {
+                stmt.setInt(paramIndex, limit);
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    guestNames.add(rs.getString("username"));
+                }
+            }
+        }
+
+        return guestNames;
+    }
+
+    /**
+     * Obtiene estadísticas extendidas del sistema
+     *
+     * @return Map con estadísticas detalladas
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public java.util.Map<String, Integer> getExtendedStats() throws SQLException {
+        java.util.Map<String, Integer> stats = new java.util.HashMap<>();
+
+        // Estadísticas básicas de jugadores
+        String playerStatsQuery = """
+        SELECT 
+            COUNT(*) as total_players,
+            SUM(CASE WHEN status = 'soltero' THEN 1 ELSE 0 END) as single_players,
+            SUM(CASE WHEN status = 'comprometido' THEN 1 ELSE 0 END) as engaged_players,
+            SUM(CASE WHEN status = 'casado' THEN 1 ELSE 0 END) as married_players
+        FROM marry_players
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(playerStatsQuery)) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    stats.put("total_players", rs.getInt("total_players"));
+                    stats.put("single_players", rs.getInt("single_players"));
+                    stats.put("engaged_players", rs.getInt("engaged_players"));
+                    stats.put("married_players", rs.getInt("married_players"));
+                }
+            }
+        }
+
+        // Estadísticas de matrimonios
+        String marriageStatsQuery = """
+        SELECT 
+            COUNT(*) as total_marriages,
+            SUM(CASE WHEN status = 'comprometido' THEN 1 ELSE 0 END) as active_engagements,
+            SUM(CASE WHEN status = 'casado' THEN 1 ELSE 0 END) as active_marriages,
+            SUM(CASE WHEN status = 'divorciado' THEN 1 ELSE 0 END) as divorces
+        FROM marry_marriages
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(marriageStatsQuery)) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    stats.put("total_marriages", rs.getInt("total_marriages"));
+                    stats.put("active_engagements", rs.getInt("active_engagements"));
+                    stats.put("active_marriages", rs.getInt("active_marriages"));
+                    stats.put("divorces", rs.getInt("divorces"));
+                }
+            }
+        }
+
+        // Estadísticas de ceremonias programadas
+        String ceremonyStatsQuery = """
+        SELECT COUNT(*) as scheduled_ceremonies
+        FROM marry_marriages 
+        WHERE status = 'comprometido' 
+        AND wedding_date IS NOT NULL 
+        AND wedding_date > NOW()
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(ceremonyStatsQuery)) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    stats.put("scheduled_ceremonies", rs.getInt("scheduled_ceremonies"));
+                }
+            }
+        }
+
+        // Estadísticas de invitados
+        String guestStatsQuery = """
+        SELECT 
+            COUNT(*) as total_invitations,
+            SUM(CASE WHEN status = 'confirmado' THEN 1 ELSE 0 END) as confirmed_guests,
+            SUM(CASE WHEN status = 'rechazado' THEN 1 ELSE 0 END) as declined_guests
+        FROM marry_guests
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(guestStatsQuery)) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    stats.put("total_invitations", rs.getInt("total_invitations"));
+                    stats.put("confirmed_guests", rs.getInt("confirmed_guests"));
+                    stats.put("declined_guests", rs.getInt("declined_guests"));
+                }
+            }
+        }
+
+        return stats;
+    }
+
+    /**
+     * Obtiene las próximas ceremonias programadas
+     *
+     * @param days  Días hacia adelante para buscar
+     * @param limit Límite de resultados
+     * @return Lista de información de ceremonias
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public java.util.List<java.util.Map<String, Object>> getUpcomingCeremonies(int days, int limit) throws SQLException {
+        java.util.List<java.util.Map<String, Object>> ceremonies = new java.util.ArrayList<>();
+
+        String query = """
+        SELECT 
+            m.id,
+            m.wedding_date,
+            m.ceremony_location,
+            p1.username as player1_name,
+            p2.username as player2_name
+        FROM marry_marriages m
+        INNER JOIN marry_players p1 ON m.player1_uuid = p1.uuid
+        INNER JOIN marry_players p2 ON m.player2_uuid = p2.uuid
+        WHERE m.status = 'comprometido'
+        AND m.wedding_date IS NOT NULL
+        AND m.wedding_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL ? DAY)
+        ORDER BY m.wedding_date ASC
+        LIMIT ?
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setInt(1, days);
+            stmt.setInt(2, limit);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    java.util.Map<String, Object> ceremony = new java.util.HashMap<>();
+                    ceremony.put("id", rs.getInt("id"));
+                    ceremony.put("wedding_date", rs.getTimestamp("wedding_date"));
+                    ceremony.put("ceremony_location", rs.getString("ceremony_location"));
+                    ceremony.put("player1_name", rs.getString("player1_name"));
+                    ceremony.put("player2_name", rs.getString("player2_name"));
+
+                    ceremonies.add(ceremony);
+                }
+            }
+        }
+
+        return ceremonies;
+    }
+
+    /**
+     * Verifica si un jugador tiene ceremonias programadas próximas
+     *
+     * @param playerUuid UUID del jugador
+     * @param hoursAhead Horas hacia adelante para verificar
+     * @return true si tiene ceremonia próxima
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public boolean hasUpcomingCeremony(java.util.UUID playerUuid, int hoursAhead) throws SQLException {
+        String query = """
+        SELECT COUNT(*) as count
+        FROM marry_marriages 
+        WHERE (player1_uuid = ? OR player2_uuid = ?)
+        AND status = 'comprometido'
+        AND wedding_date IS NOT NULL
+        AND wedding_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL ? HOUR)
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setString(1, playerUuid.toString());
+            stmt.setString(2, playerUuid.toString());
+            stmt.setInt(3, hoursAhead);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("count") > 0;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Obtiene el número de matrimonios de un jugador en su historial
+     *
+     * @param playerUuid UUID del jugador
+     * @return Número total de matrimonios (incluyendo divorcios)
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public int getPlayerMarriageCount(java.util.UUID playerUuid) throws SQLException {
+        String query = """
+        SELECT COUNT(*) as count
+        FROM marry_marriages 
+        WHERE (player1_uuid = ? OR player2_uuid = ?)
+        AND status IN ('casado', 'divorciado')
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setString(1, playerUuid.toString());
+            stmt.setString(2, playerUuid.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("count");
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Obtiene la fecha del último divorcio de un jugador
+     *
+     * @param playerUuid UUID del jugador
+     * @return Timestamp del último divorcio, null si no tiene
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public Timestamp getLastDivorceDate(java.util.UUID playerUuid) throws SQLException {
+        String query = """
+        SELECT divorce_date
+        FROM marry_marriages 
+        WHERE (player1_uuid = ? OR player2_uuid = ?)
+        AND status = 'divorciado'
+        AND divorce_date IS NOT NULL
+        ORDER BY divorce_date DESC
+        LIMIT 1
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setString(1, playerUuid.toString());
+            stmt.setString(2, playerUuid.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getTimestamp("divorce_date");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Verifica si un jugador puede divorciarse (sin cooldown activo)
+     *
+     * @param playerUuid   UUID del jugador
+     * @param cooldownDays Días de cooldown entre divorcios
+     * @return true si puede divorciarse
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public boolean canPlayerDivorce(java.util.UUID playerUuid, int cooldownDays) throws SQLException {
+        if (cooldownDays <= 0) {
+            return true; // Sin cooldown
+        }
+
+        Timestamp lastDivorce = getLastDivorceDate(playerUuid);
+        if (lastDivorce == null) {
+            return true; // Nunca se ha divorciado
+        }
+
+        long cooldownMs = cooldownDays * 24L * 60L * 60L * 1000L; // Convertir días a milisegundos
+        long timeSinceLastDivorce = System.currentTimeMillis() - lastDivorce.getTime();
+
+        return timeSinceLastDivorce >= cooldownMs;
+    }
+
+    /**
+     * Obtiene información completa de un matrimonio
+     *
+     * @param marriageId ID del matrimonio
+     * @return Map con toda la información del matrimonio
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public java.util.Map<String, Object> getCompleteMarriageInfo(int marriageId) throws SQLException {
+        String query = """
+        SELECT 
+            m.*,
+            p1.username as player1_name,
+            p2.username as player2_name
+        FROM marry_marriages m
+        INNER JOIN marry_players p1 ON m.player1_uuid = p1.uuid
+        INNER JOIN marry_players p2 ON m.player2_uuid = p2.uuid
+        WHERE m.id = ?
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setInt(1, marriageId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    java.util.Map<String, Object> info = new java.util.HashMap<>();
+
+                    info.put("id", rs.getInt("id"));
+                    info.put("player1_uuid", rs.getString("player1_uuid"));
+                    info.put("player2_uuid", rs.getString("player2_uuid"));
+                    info.put("player1_name", rs.getString("player1_name"));
+                    info.put("player2_name", rs.getString("player2_name"));
+                    info.put("status", rs.getString("status"));
+                    info.put("engagement_date", rs.getTimestamp("engagement_date"));
+                    info.put("wedding_date", rs.getTimestamp("wedding_date"));
+                    info.put("ceremony_location", rs.getString("ceremony_location"));
+                    info.put("divorce_date", rs.getTimestamp("divorce_date"));
+                    info.put("created_at", rs.getTimestamp("created_at"));
+                    info.put("updated_at", rs.getTimestamp("updated_at"));
+
+                    return info;
+                }
+            }
+        }
+
+        return null;
     }
 }

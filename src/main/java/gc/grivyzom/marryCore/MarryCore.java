@@ -3,6 +3,7 @@ package gc.grivyzom.marryCore;
 import gc.grivyzom.marryCore.commands.*;
 import gc.grivyzom.marryCore.database.DatabaseManager;
 import gc.grivyzom.marryCore.listeners.*;
+import gc.grivyzom.marryCore.placeholders.PlaceholderManager;
 import gc.grivyzom.marryCore.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -22,6 +23,7 @@ public final class MarryCore extends JavaPlugin {
     private Connection connection;
     private DatabaseManager databaseManager;
     private MessageUtils messageUtils;
+    private PlaceholderManager placeholderManager;
 
     @Override
     public void onEnable() {
@@ -61,6 +63,9 @@ public final class MarryCore extends JavaPlugin {
             // Inicializar managers
             initializeManagers();
 
+            // Inicializar sistema de placeholders
+            initializePlaceholders();
+
             // Registrar comandos
             registerCommands();
 
@@ -87,6 +92,11 @@ public final class MarryCore extends JavaPlugin {
         getLogger().info(ChatColor.RED + "  Autor: Brocolitx");
         getLogger().info(ChatColor.RED + "  ¡Gracias por usar MarryCore!");
         getLogger().info(ChatColor.RED + "=================================");
+
+        // Deshabilitar placeholders
+        if (placeholderManager != null) {
+            placeholderManager.disable();
+        }
 
         // Cerrar conexión a la base de datos
         if (connection != null) {
@@ -284,6 +294,22 @@ public final class MarryCore extends JavaPlugin {
         }
     }
 
+    private void initializePlaceholders() {
+        try {
+            this.placeholderManager = new PlaceholderManager(this);
+            getLogger().info("Sistema de placeholders inicializado");
+
+            if (placeholderManager.isPlaceholderAPIEnabled()) {
+                getLogger().info(ChatColor.GREEN + "PlaceholderAPI detectado - Placeholders habilitados");
+            } else {
+                getLogger().info(ChatColor.YELLOW + "PlaceholderAPI no detectado - Funcionalidad básica disponible");
+            }
+        } catch (Exception e) {
+            getLogger().warning("Error al inicializar placeholders: " + e.getMessage());
+            // No es crítico, continuar sin placeholders
+        }
+    }
+
     private void registerCommands() {
         try {
             // Verificar que los comandos estén definidos en plugin.yml
@@ -348,7 +374,7 @@ public final class MarryCore extends JavaPlugin {
             // Tarea de guardado automático cada 5 minutos
             int saveInterval = getConfig().getInt("general.auto_save_interval", 5) * 60 * 20; // Convertir a ticks
             Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-                // Aquí puedes añadir lógica de guardado automático si es necesaria
+                // Aquí puedes añadir lógica de guardado automático
                 if (getConfig().getBoolean("general.debug", false)) {
                     getLogger().info("Ejecutando guardado automático...");
                 }
@@ -389,12 +415,19 @@ public final class MarryCore extends JavaPlugin {
         return messageUtils;
     }
 
+    public PlaceholderManager getPlaceholderManager() {
+        return placeholderManager;
+    }
+
     // Método para recargar configuraciones
     public void reloadConfigs() {
         reloadConfig();
         loadDatabaseConfig();
         if (messageUtils != null) {
             messageUtils.reloadMessages();
+        }
+        if (placeholderManager != null) {
+            placeholderManager.reload();
         }
     }
 
