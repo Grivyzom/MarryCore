@@ -32,36 +32,51 @@ public final class MarryCore extends JavaPlugin {
         getLogger().info(ChatColor.GREEN + "  Website: www.grivyzom.com");
         getLogger().info(ChatColor.GREEN + "=================================");
 
-        // Crear configuraciones
-        saveDefaultConfig();
-        createDatabaseConfig();
+        try {
+            // Crear configuraciones
+            saveDefaultConfig();
+            createDatabaseConfig();
 
-        // Crear archivos de recursos
-        saveResource("messages.yml", false);
-        saveResource("items.yml", false);
+            // Crear archivos de recursos
+            saveResource("messages.yml", false);
+            saveResource("items.yml", false);
 
-        // Cargar configuración de base de datos
-        loadDatabaseConfig();
+            // Cargar configuración de base de datos
+            loadDatabaseConfig();
 
-        // Conectar a la base de datos
-        connectToDatabase();
+            // Conectar a la base de datos
+            if (!connectToDatabase()) {
+                getLogger().severe("No se pudo conectar a la base de datos. Deshabilitando plugin...");
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
 
-        // Crear tablas si no existen
-        createTables();
+            // Crear tablas si no existen
+            if (!createTables()) {
+                getLogger().severe("No se pudieron crear las tablas. Deshabilitando plugin...");
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
 
-        // Inicializar managers
-        initializeManagers();
+            // Inicializar managers
+            initializeManagers();
 
-        // Registrar comandos
-        registerCommands();
+            // Registrar comandos
+            registerCommands();
 
-        // Registrar listeners
-        registerListeners();
+            // Registrar listeners
+            registerListeners();
 
-        // Tareas programadas
-        scheduleRepeatingTasks();
+            // Tareas programadas
+            scheduleRepeatingTasks();
 
-        getLogger().info(ChatColor.GREEN + "¡MarryCore ha sido habilitado correctamente!");
+            getLogger().info(ChatColor.GREEN + "¡MarryCore ha sido habilitado correctamente!");
+
+        } catch (Exception e) {
+            getLogger().severe("Error crítico durante la inicialización: " + e.getMessage());
+            e.printStackTrace();
+            getServer().getPluginManager().disablePlugin(this);
+        }
     }
 
     @Override
@@ -126,38 +141,65 @@ public final class MarryCore extends JavaPlugin {
         getLogger().info(ChatColor.GREEN + "Configuración de base de datos cargada.");
     }
 
-    private void connectToDatabase() {
-        String host = databaseConfig.getString("database.host");
-        int port = databaseConfig.getInt("database.port");
-        String database = databaseConfig.getString("database.name");
-        String username = databaseConfig.getString("database.username");
-        String password = databaseConfig.getString("database.password");
-        boolean useSSL = databaseConfig.getBoolean("database.useSSL");
-        boolean autoReconnect = databaseConfig.getBoolean("database.autoReconnect");
+    private boolean connectToDatabase() {
+        String host = databaseConfig.getString("database.host", "localhost");
+        int port = databaseConfig.getInt("database.port", 3306);
+        String database = databaseConfig.getString("database.name", "marrycore");
+        String username = databaseConfig.getString("database.username", "root");
+        String password = databaseConfig.getString("database.password", "");
+        boolean useSSL = databaseConfig.getBoolean("database.useSSL", false);
+        boolean autoReconnect = databaseConfig.getBoolean("database.autoReconnect", true);
 
         try {
-            // Construir URL de conexión
-            String url = String.format("jdbc:mysql://%s:%d/%s?useSSL=%s&autoReconnect=%s",
+            // Cargar driver de MySQL explícitamente
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
+            // Construir URL de conexión con parámetros adicionales
+            String url = String.format("jdbc:mysql://%s:%d/%s?useSSL=%s&autoReconnect=%s&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC",
                     host, port, database, useSSL, autoReconnect);
+
+            getLogger().info("Intentando conectar a la base de datos...");
+            getLogger().info("URL de conexión: " + url.replaceAll("password=[^&]+", "password=***"));
 
             // Establecer conexión
             connection = DriverManager.getConnection(url, username, password);
 
-            getLogger().info(ChatColor.GREEN + "¡Conexión exitosa a la base de datos MySQL!");
+            // Verificar que la conexión esté activa
+            if (connection != null && !connection.isClosed()) {
+                getLogger().info(ChatColor.GREEN + "¡Conexión exitosa a la base de datos MySQL!");
+                return true;
+            } else {
+                getLogger().severe("La conexión a la base de datos es nula o está cerrada");
+                return false;
+            }
 
+        } catch (ClassNotFoundException e) {
+            getLogger().severe("Driver MySQL no encontrado. Asegúrese de que mysql-connector-java esté en el classpath.");
+            getLogger().severe("Error: " + e.getMessage());
+            return false;
         } catch (SQLException e) {
-            getLogger().severe("Error al conectar con la base de datos: " + e.getMessage());
-            getLogger().severe("Verifique la configuración en database.yml");
-
-            // Deshabilitar plugin si no se puede conectar
-            Bukkit.getPluginManager().disablePlugin(this);
+            getLogger().severe("Error al conectar con la base de datos MySQL:");
+            getLogger().severe("Código de error: " + e.getErrorCode());
+            getLogger().severe("Estado SQL: " + e.getSQLState());
+            getLogger().severe("Mensaje: " + e.getMessage());
+            getLogger().severe("");
+            getLogger().severe("Posibles soluciones:");
+            getLogger().severe("1. Verifique que MySQL esté ejecutándose");
+            getLogger().severe("2. Compruebe las credenciales en database.yml");
+            getLogger().severe("3. Asegúrese de que la base de datos '" + database + "' exista");
+            getLogger().severe("4. Verifique que el usuario tenga permisos");
+            return false;
+        } catch (Exception e) {
+            getLogger().severe("Error inesperado al conectar a la base de datos: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 
-    private void createTables() {
+    private boolean createTables() {
         if (connection == null) {
             getLogger().warning("No se puede crear tablas: conexión nula");
-            return;
+            return false;
         }
 
         try {
@@ -172,7 +214,7 @@ public final class MarryCore extends JavaPlugin {
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     INDEX idx_partner (partner_uuid),
                     INDEX idx_status (status)
-                )
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """;
 
             // Tabla de matrimonios
@@ -191,7 +233,7 @@ public final class MarryCore extends JavaPlugin {
                     INDEX idx_players (player1_uuid, player2_uuid),
                     INDEX idx_status (status),
                     INDEX idx_wedding_date (wedding_date)
-                )
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """;
 
             // Tabla de invitados
@@ -206,72 +248,123 @@ public final class MarryCore extends JavaPlugin {
                     FOREIGN KEY (marriage_id) REFERENCES marry_marriages(id) ON DELETE CASCADE,
                     INDEX idx_marriage (marriage_id),
                     INDEX idx_guest (guest_uuid)
-                )
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """;
 
             // Ejecutar creación de tablas
             connection.createStatement().execute(playersTable);
+            getLogger().info("Tabla marry_players creada/verificada");
+
             connection.createStatement().execute(marriagesTable);
+            getLogger().info("Tabla marry_marriages creada/verificada");
+
             connection.createStatement().execute(guestsTable);
+            getLogger().info("Tabla marry_guests creada/verificada");
 
             getLogger().info(ChatColor.GREEN + "Tablas de base de datos creadas/verificadas correctamente.");
+            return true;
 
         } catch (SQLException e) {
             getLogger().severe("Error al crear tablas: " + e.getMessage());
+            getLogger().severe("Código de error: " + e.getErrorCode());
+            getLogger().severe("Estado SQL: " + e.getSQLState());
+            e.printStackTrace();
+            return false;
         }
     }
 
     private void initializeManagers() {
-        this.databaseManager = new DatabaseManager(this);
-        this.messageUtils = new MessageUtils(this);
+        try {
+            this.databaseManager = new DatabaseManager(this);
+            this.messageUtils = new MessageUtils(this);
+            getLogger().info("Managers inicializados correctamente");
+        } catch (Exception e) {
+            getLogger().severe("Error al inicializar managers: " + e.getMessage());
+            throw e;
+        }
     }
 
     private void registerCommands() {
-        // Registrar comando principal de matrimonio
-        getCommand("marry").setExecutor(new MarryCommand(this));
+        try {
+            // Verificar que los comandos estén definidos en plugin.yml
+            if (getCommand("marry") != null) {
+                getCommand("marry").setExecutor(new MarryCommand(this));
+            } else {
+                getLogger().warning("Comando 'marry' no encontrado en plugin.yml");
+            }
 
-        // Registrar comando de aceptar/rechazar
-        getCommand("aceptar").setExecutor(new AcceptCommand(this));
-        getCommand("rechazar").setExecutor(new RejectCommand(this));
+            if (getCommand("aceptar") != null) {
+                getCommand("aceptar").setExecutor(new AcceptCommand(this));
+            }
 
-        // Registrar comando de casamiento
-        getCommand("casamiento").setExecutor(new WeddingCommand(this));
+            if (getCommand("rechazar") != null) {
+                getCommand("rechazar").setExecutor(new RejectCommand(this));
+            }
 
-        // Registrar comando de invitados
-        getCommand("invitados").setExecutor(new GuestsCommand(this));
+            if (getCommand("casamiento") != null) {
+                getCommand("casamiento").setExecutor(new WeddingCommand(this));
+            }
 
-        // Registrar comando de divorcio
-        getCommand("divorcio").setExecutor(new DivorceCommand(this));
+            if (getCommand("invitados") != null) {
+                getCommand("invitados").setExecutor(new GuestsCommand(this));
+            }
 
-        // Registrar comando de teletransporte
-        getCommand("conyuge").setExecutor(new SpouseTeleportCommand(this));
+            if (getCommand("divorcio") != null) {
+                getCommand("divorcio").setExecutor(new DivorceCommand(this));
+            }
 
-        // Registrar comandos administrativos
-        getCommand("marrycore").setExecutor(new AdminCommand(this));
+            if (getCommand("conyuge") != null) {
+                getCommand("conyuge").setExecutor(new SpouseTeleportCommand(this));
+            }
+
+            if (getCommand("marrycore") != null) {
+                getCommand("marrycore").setExecutor(new AdminCommand(this));
+            } else {
+                getLogger().warning("Comando 'marrycore' no encontrado en plugin.yml");
+            }
+
+            getLogger().info("Comandos registrados correctamente");
+        } catch (Exception e) {
+            getLogger().severe("Error al registrar comandos: " + e.getMessage());
+            throw e;
+        }
     }
 
     private void registerListeners() {
-        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
-        getServer().getPluginManager().registerEvents(new ChatListener(this), this);
-        getServer().getPluginManager().registerEvents(new PlayerInteractListener(this), this);
-        getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
+        try {
+            getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
+            getServer().getPluginManager().registerEvents(new ChatListener(this), this);
+            getServer().getPluginManager().registerEvents(new PlayerInteractListener(this), this);
+            getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
+            getLogger().info("Listeners registrados correctamente");
+        } catch (Exception e) {
+            getLogger().severe("Error al registrar listeners: " + e.getMessage());
+            throw e;
+        }
     }
 
     private void scheduleRepeatingTasks() {
-        // Tarea de guardado automático cada 5 minutos
-        int saveInterval = getConfig().getInt("general.auto_save_interval", 5) * 60 * 20; // Convertir a ticks
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-            // Aquí puedes añadir lógica de guardado automático si es necesaria
-            if (getConfig().getBoolean("general.debug", false)) {
-                getLogger().info("Ejecutando guardado automático...");
-            }
-        }, saveInterval, saveInterval);
+        try {
+            // Tarea de guardado automático cada 5 minutos
+            int saveInterval = getConfig().getInt("general.auto_save_interval", 5) * 60 * 20; // Convertir a ticks
+            Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+                // Aquí puedes añadir lógica de guardado automático si es necesaria
+                if (getConfig().getBoolean("general.debug", false)) {
+                    getLogger().info("Ejecutando guardado automático...");
+                }
+            }, saveInterval, saveInterval);
 
-        // Verificar recordatorios de bodas cada hora
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-            // Verificar bodas próximas y enviar recordatorios
-            checkUpcomingWeddings();
-        }, 20 * 60 * 60, 20 * 60 * 60); // Cada hora
+            // Verificar recordatorios de bodas cada hora
+            Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+                // Verificar bodas próximas y enviar recordatorios
+                checkUpcomingWeddings();
+            }, 20 * 60 * 60, 20 * 60 * 60); // Cada hora
+
+            getLogger().info("Tareas programadas iniciadas correctamente");
+        } catch (Exception e) {
+            getLogger().severe("Error al programar tareas: " + e.getMessage());
+            throw e;
+        }
     }
 
     private void checkUpcomingWeddings() {
@@ -300,6 +393,30 @@ public final class MarryCore extends JavaPlugin {
     public void reloadConfigs() {
         reloadConfig();
         loadDatabaseConfig();
-        messageUtils.reloadMessages();
+        if (messageUtils != null) {
+            messageUtils.reloadMessages();
+        }
+    }
+
+    // Método para verificar la salud de la conexión
+    public boolean isDatabaseConnected() {
+        try {
+            return connection != null && !connection.isClosed() && connection.isValid(5);
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    // Método para reconectar a la base de datos
+    public boolean reconnectDatabase() {
+        try {
+            if (connection != null && !connection.isClosed()) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            getLogger().warning("Error al cerrar conexión anterior: " + e.getMessage());
+        }
+
+        return connectToDatabase();
     }
 }

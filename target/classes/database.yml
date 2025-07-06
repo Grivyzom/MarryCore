@@ -11,8 +11,9 @@ database:
   name: "marrycore"
 
   # Credenciales de acceso
-  username: "root"
-  password: ""
+  # IMPORTANTE: Cambia estos valores por los correctos
+  username: "root"  # o "root" si usas el usuario root
+  password: "tu_contraseña"   # pon aquí tu contraseña real
 
   # Configuraciones adicionales
   useSSL: false
@@ -26,9 +27,22 @@ database:
 # ========================================
 # Instrucciones de configuración:
 # ========================================
-# 1. Cambie 'host' por la IP de su servidor MySQL
-# 2. Modifique 'port' si usa un puerto diferente al 3306
-# 3. Establezca el nombre de su base de datos en 'name'
-# 4. Configure su usuario y contraseña MySQL
-# 5. Guarde el archivo y reinicie el servidor
+# 1. Asegúrate de que MySQL esté ejecutándose
+# 2. Crea la base de datos 'marrycore' si no existe
+# 3. Configura las credenciales correctas arriba
+# 4. Si usas un servidor remoto, cambia 'localhost' por la IP
+# 5. Guarda el archivo y reinicia el servidor
+
 # ========================================
+# Comandos SQL para configurar la base de datos:
+# ========================================
+# CREATE DATABASE IF NOT EXISTS marrycore
+# CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+#
+# CREATE USER IF NOT EXISTS 'marrycore_user'@'localhost'
+# IDENTIFIED BY 'tu_contraseña';
+#
+# GRANT ALL PRIVILEGES ON marrycore.*
+# TO 'marrycore_user'@'localhost';
+#
+# FLUSH PRIVILEGES;
