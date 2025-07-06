@@ -1,0 +1,17 @@
+<component name="ArtifactManager">
+  <artifact name="MarryCore:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/MarryCore_jar</output-path>
+    <root id="root">
+      <element id="archive" name="MarryCore.jar">
+        <element id="directory" name="META-INF">
+          <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+        </element>
+        <element id="module-output" name="MarryCore" />
+      </element>
+      <element id="library" level="project" name="Maven: org.bstats:bstats-base:3.0.2" />
+      <element id="library" level="project" name="Maven: com.mysql:mysql-connector-j:8.0.33" />
+      <element id="library" level="project" name="Maven: com.google.protobuf:protobuf-java:3.21.9" />
+      <element id="library" level="project" name="Maven: org.bstats:bstats-bukkit:3.0.2" />
+    </root>
+  </artifact>
+</component>

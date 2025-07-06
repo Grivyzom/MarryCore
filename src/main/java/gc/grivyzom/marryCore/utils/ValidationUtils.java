@@ -3,6 +3,7 @@ package gc.grivyzom.marryCore.utils;
 import gc.grivyzom.marryCore.MarryCore;
 import gc.grivyzom.marryCore.enums.MaritalStatus;
 import gc.grivyzom.marryCore.models.MarryPlayer;
+import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
@@ -218,14 +219,27 @@ public class ValidationUtils {
      * @return true si tiene suficiente tiempo de juego
      */
     private boolean hasMinimumPlaytime(Player player) {
-        if (!plugin.getConfig().getBoolean("security.anti_abuse.minimum_playtime_hours", false)) {
+        // Verificar si la configuración está habilitada
+        boolean checkPlaytime = plugin.getConfig().getBoolean("security.anti_abuse.minimum_playtime_hours_enabled", false);
+        if (!checkPlaytime) {
             return true; // Si no está habilitado, siempre permitir
         }
 
         int minHours = plugin.getConfig().getInt("security.anti_abuse.minimum_playtime_hours", 24);
-        long minTicks = TimeUnit.HOURS.toSeconds(minHours) * 20; // Convertir a ticks
 
-        return player.getStatistic(org.bukkit.Statistic.PLAY_ONE_MINUTE) >= minTicks;
+        try {
+            // Obtener estadísticas de tiempo de juego (en ticks)
+            int playtimeTicks = player.getStatistic(Statistic.PLAY_ONE_MINUTE);
+
+            // Convertir ticks a horas (20 ticks = 1 segundo, 3600 segundos = 1 hora)
+            double playtimeHours = playtimeTicks / (20.0 * 3600.0);
+
+            return playtimeHours >= minHours;
+        } catch (Exception e) {
+            // Si hay algún error al obtener las estadísticas, permitir por defecto
+            plugin.getLogger().warning("Error al verificar tiempo de juego de " + player.getName() + ": " + e.getMessage());
+            return true;
+        }
     }
 
     /**
@@ -288,8 +302,8 @@ public class ValidationUtils {
         try {
             MarryPlayer playerData = plugin.getDatabaseManager().getPlayerData(player.getUniqueId());
 
-            // Verificar que esté casado
-            if (playerData.getStatus() != MaritalStatus.CASADO) {
+            // Verificar que esté casado o comprometido
+            if (playerData.getStatus() != MaritalStatus.CASADO && playerData.getStatus() != MaritalStatus.COMPROMETIDO) {
                 return ValidationResult.fail("divorce.not-married");
             }
 

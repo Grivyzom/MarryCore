@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -227,7 +228,14 @@ public class MessageUtils {
     public void sendTitle(Player player, String titlePath, String subtitlePath) {
         String title = getMessage(titlePath);
         String subtitle = getMessage(subtitlePath);
-        player.sendTitle(title, subtitle, 10, 70, 20);
+
+        try {
+            // Intentar usar el método moderno primero
+            player.sendTitle(title, subtitle, 10, 70, 20);
+        } catch (Exception e) {
+            // Si falla, usar reflexión para versiones más antiguas
+            sendTitleReflection(player, title, subtitle, 10, 70, 20);
+        }
     }
 
     /**
@@ -240,7 +248,33 @@ public class MessageUtils {
     public void sendTitle(Player player, String titlePath, String subtitlePath, String... replacements) {
         String title = getMessage(titlePath, replacements);
         String subtitle = getMessage(subtitlePath, replacements);
-        player.sendTitle(title, subtitle, 10, 70, 20);
+
+        try {
+            player.sendTitle(title, subtitle, 10, 70, 20);
+        } catch (Exception e) {
+            sendTitleReflection(player, title, subtitle, 10, 70, 20);
+        }
+    }
+
+    /**
+     * Envía un título usando reflexión (para compatibilidad)
+     */
+    private void sendTitleReflection(Player player, String title, String subtitle, int fadeIn, int stay, int fadeOut) {
+        try {
+            // Intentar usar el método de Paper/Spigot más reciente
+            Class<?> titleClass = Class.forName("org.bukkit.Title");
+            Method createMethod = titleClass.getMethod("create", String.class, String.class, int.class, int.class, int.class);
+            Object titleObj = createMethod.invoke(null, title, subtitle, fadeIn, stay, fadeOut);
+
+            Method sendTitleMethod = Player.class.getMethod("sendTitle", titleClass);
+            sendTitleMethod.invoke(player, titleObj);
+        } catch (Exception e) {
+            // Si todo falla, enviar como mensaje normal
+            player.sendMessage(title);
+            if (subtitle != null && !subtitle.isEmpty()) {
+                player.sendMessage(subtitle);
+            }
+        }
     }
 
     /**
@@ -250,7 +284,7 @@ public class MessageUtils {
      */
     public void sendActionBar(Player player, String path) {
         String message = getMessage(path);
-        player.sendActionBar(message);
+        sendActionBarCompat(player, message);
     }
 
     /**
@@ -261,7 +295,42 @@ public class MessageUtils {
      */
     public void sendActionBar(Player player, String path, String... replacements) {
         String message = getMessage(path, replacements);
-        player.sendActionBar(message);
+        sendActionBarCompat(player, message);
+    }
+
+    /**
+     * Envía action bar compatible con diferentes versiones
+     */
+    private void sendActionBarCompat(Player player, String message) {
+        try {
+            // Intentar método directo de Paper/Spigot moderno
+            Method sendActionBarMethod = Player.class.getMethod("sendActionBar", String.class);
+            sendActionBarMethod.invoke(player, message);
+        } catch (NoSuchMethodException e) {
+            // Intentar con ComponentBuilder (versiones más recientes)
+            try {
+                Class<?> componentClass = Class.forName("net.md_5.bungee.api.chat.TextComponent");
+                Object component = componentClass.getConstructor(String.class).newInstance(message);
+
+                Method sendActionBarMethod = Player.class.getMethod("spigot");
+                Object spigotPlayer = sendActionBarMethod.invoke(player);
+
+                Method sendMessageMethod = spigotPlayer.getClass().getMethod("sendMessage",
+                        Class.forName("net.md_5.bungee.api.ChatMessageType"),
+                        Class.forName("net.md_5.bungee.api.chat.BaseComponent"));
+
+                Object actionBarType = Class.forName("net.md_5.bungee.api.ChatMessageType")
+                        .getField("ACTION_BAR").get(null);
+
+                sendMessageMethod.invoke(spigotPlayer, actionBarType, component);
+            } catch (Exception ex) {
+                // Si todo falla, enviar como mensaje normal
+                player.sendMessage("§e[ActionBar] " + message);
+            }
+        } catch (Exception e) {
+            // Fallback: enviar como mensaje normal
+            player.sendMessage("§e[ActionBar] " + message);
+        }
     }
 
     /**
