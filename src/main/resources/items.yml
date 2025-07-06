@@ -1,0 +1,264 @@
+# ========================================
+# MarryCore - Configuración de Ítems
+# Autor: Brocolitx
+# Versión: 0.0.1
+# ========================================
+
+# ========================================
+# ANILLO DE PROPUESTA
+# ========================================
+proposal_ring:
+  material: GOLD_INGOT
+  name: "&e&l⭐ Anillo de Propuesta ⭐"
+  lore:
+    - "&7Un anillo especial para proponer"
+    - "&7matrimonio a tu ser querido."
+    - ""
+    - "&eClick derecho &7para proponer a un jugador"
+    - "&cSe consume al usar"
+
+  # Efectos visuales
+  glow: true
+  custom_model_data: 1001
+
+  # Receta de crafteo
+  recipe:
+    enabled: true
+    shape:
+      - " G "
+      - "GDG"
+      - " G "
+    ingredients:
+      G: GOLD_INGOT
+      D: DIAMOND
+
+  # Configuraciones
+  stackable: false
+  consumable: true
+
+# ========================================
+# ANILLO NUPCIAL
+# ========================================
+engagement_ring:
+  material: DIAMOND
+  name: "&b&l💍 Anillo Nupcial 💍"
+  lore:
+    - "&7Símbolo de compromiso entre"
+    - "&7dos almas destinadas."
+    - ""
+    - "&bObtenido al aceptar una propuesta"
+    - "&7Comprometido/a con: &e{partner}"
+
+  # Efectos visuales
+  glow: true
+  custom_model_data: 1002
+
+  # Configuraciones
+  stackable: false
+  consumable: false
+  droppable: false
+  tradeable: false
+
+# ========================================
+# ANILLO DE BODA
+# ========================================
+wedding_ring:
+  material: NETHERITE_INGOT
+  name: "&d&l💖 Anillo de Boda 💖"
+  lore:
+    - "&7El vínculo eterno del matrimonio."
+    - "&7Un amor que trasciende mundos."
+    - ""
+    - "&dCasado/a con: &e{partner}"
+    - "&7Fecha de boda: &f{wedding_date}"
+    - ""
+    - "&aClick derecho: &7Teletransportarse al cónyuge"
+
+  # Efectos visuales
+  glow: true
+  custom_model_data: 1003
+  enchanted: true
+
+  # Habilidades especiales
+  abilities:
+    teleport_to_spouse: true
+    experience_bonus: true
+    special_effects: true
+
+  # Configuraciones
+  stackable: false
+  consumable: false
+  droppable: false
+  tradeable: false
+  unbreakable: true
+
+# ========================================
+# INVITACIÓN DE BODA
+# ========================================
+wedding_invitation:
+  material: PAPER
+  name: "&f&l📜 Invitación de Boda 📜"
+  lore:
+    - "&7Invitación especial para la ceremonia"
+    - "&7de matrimonio de &e{couple}&7."
+    - ""
+    - "&fFecha: &e{date}"
+    - "&fHora: &e{time}"
+    - "&fLugar: &e{location}"
+    - ""
+    - "&aClick derecho &7para confirmar asistencia"
+
+  # Efectos visuales
+  glow: false
+  custom_model_data: 1004
+
+  # Configuraciones
+  stackable: true
+  consumable: false
+  droppable: true
+  tradeable: false
+
+# ========================================
+# BOUQUET DE FLORES
+# ========================================
+flower_bouquet:
+  material: OXEYE_DAISY
+  name: "&e&l🌹 Bouquet de Flores 🌹"
+  lore:
+    - "&7Hermoso ramo de flores para"
+    - "&7decorar la ceremonia."
+    - ""
+    - "&eÍtem decorativo especial"
+
+  # Efectos visuales
+  glow: true
+  custom_model_data: 1005
+
+  # Configuraciones
+  stackable: true
+  consumable: false
+  droppable: true
+  tradeable: true
+
+# ========================================
+# CONFIGURACIONES GLOBALES DE ÍTEMS
+# ========================================
+global_settings:
+  # Protección de ítems especiales
+  protected_items:
+    - engagement_ring
+    - wedding_ring
+
+  # Ítems que no se pueden perder al morir
+  keep_on_death:
+    - engagement_ring
+    - wedding_ring
+    - wedding_invitation
+
+  # Ítems que aparecen en el inventario creativo
+  creative_items:
+    - proposal_ring
+    - flower_bouquet
+
+  # Efectos de partículas
+  particle_effects:
+    proposal_ring:
+      type: HEART
+      count: 5
+      interval: 60 # ticks
+
+    engagement_ring:
+      type: VILLAGER_HAPPY
+      count: 3
+      interval: 100 # ticks
+
+    wedding_ring:
+      type: END_ROD
+      count: 2
+      interval: 80 # ticks
+
+# ========================================
+# RECETAS PERSONALIZADAS
+# ========================================
+custom_recipes:
+
+  # Bouquet de flores
+  flower_bouquet:
+    enabled: true
+    type: SHAPED
+    shape:
+      - " F "
+      - " F "
+      - " S "
+    ingredients:
+      F: OXEYE_DAISY
+      S: STICK
+    result_amount: 1
+
+  # Anillo de propuesta mejorado (con oro y esmeralda)
+  proposal_ring_emerald:
+    enabled: true
+    type: SHAPED
+    shape:
+      - " G "
+      - "GEG"
+      - " G "
+    ingredients:
+      G: GOLD_INGOT
+      E: EMERALD
+    result:
+      material: GOLD_INGOT
+      name: "&a&l⭐ Anillo de Propuesta Premium ⭐"
+      custom_model_data: 1006
+
+# ========================================
+# CONFIGURACIONES DE CRAFTEO
+# ========================================
+crafting:
+  # Requerir permisos para craftear
+  require_permission: false
+
+  # Mostrar recetas en el libro de recetas
+  show_in_recipe_book: true
+
+  # Anunciar cuando alguien craftea un anillo
+  announce_crafting: true
+
+  # Limitar cantidad de anillos por jugador
+  limit_per_player:
+    proposal_ring: 3
+    flower_bouquet: 10
+
+# ========================================
+# EFECTOS ESPECIALES
+# ========================================
+special_effects:
+  # Cuando se usa un anillo de propuesta
+  proposal_use:
+    sound: ENTITY_EXPERIENCE_ORB_PICKUP
+    volume: 1.0
+    pitch: 1.2
+    particles: HEART
+
+  # Cuando se acepta una propuesta
+  engagement_success:
+    sound: ENTITY_PLAYER_LEVELUP
+    volume: 1.0
+    pitch: 1.0
+    fireworks: true
+
+  # Durante la ceremonia
+  wedding_ceremony:
+    sound: ENTITY_ENDER_DRAGON_DEATH
+    volume: 0.8
+    pitch: 1.5
+    fireworks: true
+    particles: END_ROD
+
+# ========================================
+# NOTAS PARA DESARROLLADORES
+# ========================================
+# - Los custom_model_data requieren un resource pack
+# - Los sonidos siguen la nomenclatura de Bukkit/Spigot
+# - Las partículas disponibles: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html
+# - Los materiales: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
