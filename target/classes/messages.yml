@@ -239,6 +239,60 @@ gifts:
 
 kisses:
   cooldown-active: "&c♥ Debes esperar &e{seconds} &csegundos antes de dar otro beso."
+
+# ========================================
+# SISTEMA DE REGALOS DE FLORES (AÑADIR A messages.yml)
+# ========================================
+flowers:
+  # Mensajes del sistema de regalos
+  gift:
+    not-married: "&c🌸 Solo las parejas casadas pueden regalarse flores."
+    partner-offline: "&c🌸 Tu pareja {partner} no está en línea."
+    inventory-full: "&c🌸 El inventario de tu pareja está lleno."
+    cooldown-active: "&c🌸 Debes esperar {seconds} segundos antes de regalar otra flor."
+    gift-sent: "&d🌸 Has regalado {flower} a tu pareja &e{partner}&d! 🌸"
+    gift-received: "&d🌸 Tu pareja &e{partner} &dte ha regalado {flower}&d! 🌸"
+    romantic-message: "&7💕 \"{message}\""
+
+  # Instrucciones de uso
+  instructions:
+    how-to: "&e🌸 Para regalar una flor: &aSostén una flor, agáchate y haz click derecho."
+    only-flowers: "&c🌸 Solo puedes regalar flores a tu pareja."
+
+  # Nombres de flores personalizados
+  names:
+    dandelion: "un diente de león"
+    poppy: "una amapola"
+    blue_orchid: "una orquídea azul"
+    allium: "un allium"
+    azure_bluet: "una bluet azul"
+    red_tulip: "un tulipán rojo"
+    orange_tulip: "un tulipán naranja"
+    white_tulip: "un tulipán blanco"
+    pink_tulip: "un tulipán rosa"
+    oxeye_daisy: "una margarita"
+    cornflower: "un aciano"
+    lily_of_the_valley: "un lirio del valle"
+    sunflower: "un girasol"
+    lilac: "una lila"
+    rose_bush: "un rosal"
+    peony: "una peonía"
+    wither_rose: "una rosa marchita"
+
+  # Mensajes románticos aleatorios
+  romantic_messages:
+    - "Con amor eterno"
+    - "Para ti, mi amor"
+    - "Eres la flor más bella de mi jardín"
+    - "Esta flor no se compara con tu belleza"
+    - "Un pequeño detalle para ti ❤"
+    - "Como esta flor, mi amor por ti nunca se marchitará"
+    - "Para la persona más especial de mi vida"
+    - "Cada pétalo representa un motivo por el que te amo"
+    - "Mi corazón florece contigo"
+    - "Eres mi primavera eterna"
+    - "Florecemos juntos como un jardín"
+    - "Eres el sol que hace crecer mis flores"
 # ========================================
 # COLORES Y SÍMBOLOS
 # ========================================
