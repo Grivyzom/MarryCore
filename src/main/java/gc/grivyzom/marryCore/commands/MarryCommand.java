@@ -63,6 +63,11 @@ public class MarryCommand implements CommandExecutor {
             return handleTeleportCommand(player);
         }
 
+        if (args.length > 0 && args[0].equalsIgnoreCase("flores")) {
+            showFlowerGuide(player);
+            return true;
+        }
+
         // Verificar argumentos para propuesta
         if (args.length != 1) {
             messageUtils.sendMessage(player, "general.invalid-command",
@@ -386,6 +391,32 @@ public class MarryCommand implements CommandExecutor {
         });
 
         return true;
+    }
+
+    private void showFlowerGuide(Player player) {
+        player.sendMessage("§d§l======= GUÍA DE FLORES ROMÁNTICAS =======");
+        player.sendMessage("§e🌸 Para regalar: §aSostén una flor y haz click derecho sobre tu pareja");
+        player.sendMessage("§e⏱️ Cooldown: §c60 segundos entre regalos");
+        player.sendMessage("");
+        player.sendMessage("§a§lEfectos de las flores:");
+        player.sendMessage("§e🌻 Diente de León: §fVelocidad II (10s)");
+        player.sendMessage("§c🌺 Amapola: §fSalto II (8s)");
+        player.sendMessage("§9🌸 Orquídea Azul: §fRegeneración I (5s)");
+        player.sendMessage("§5🌿 Allium: §fResistencia I (12s)");
+        player.sendMessage("§b🌼 Bluet Azul: §fVisión Nocturna (15s)");
+        player.sendMessage("§c🌷 Tulipán Rojo: §fFuerza I (10s)");
+        player.sendMessage("§6🌷 Tulipán Naranja: §fResistencia al Fuego (10s)");
+        player.sendMessage("§f🌷 Tulipán Blanco: §fSaturación (5s)");
+        player.sendMessage("§d🌷 Tulipán Rosa: §fInvisibilidad (8s)");
+        player.sendMessage("§e🌼 Margarita: §fVida Extra (20s)");
+        player.sendMessage("§1🌾 Aciano: §fPrisa (10s)");
+        player.sendMessage("§f🔔 Lirio del Valle: §fSuerte (30s)");
+        player.sendMessage("§e🌻 Girasol: §fAbsorción II (20s)");
+        player.sendMessage("§d🌿 Lila: §fCaída Lenta (15s)");
+        player.sendMessage("§c🌹 Rosal: §fHéroe de la Aldea (10s)");
+        player.sendMessage("§d🌸 Peonía: §fGracia de Delfín (12s)");
+        player.sendMessage("§8🥀 Rosa Marchita: §fBrillo (8s)");
+        player.sendMessage("§d§l=======================================");
     }
 
     private void createProposal(Player proposer, Player target) {

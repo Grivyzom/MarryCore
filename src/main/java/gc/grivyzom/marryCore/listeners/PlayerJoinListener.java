@@ -112,8 +112,12 @@ public class PlayerJoinListener implements Listener {
         // Limpiar propuestas pendientes
         MarryCommand.cleanupProposal(playerUuid);
 
-        // NUEVO: Limpiar cooldowns de besos
+        // Limpiar cooldowns de besos
         KissListener.cleanupKissCooldown(playerUuid);
+
+        // NUEVO: Limpiar cooldowns de flores
+        PlayerInteractListener.cleanupFlowerCooldown(playerUuid);
+
 
         // Limpiar confirmaciones de divorcio
         try {

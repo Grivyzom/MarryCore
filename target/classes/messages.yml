@@ -256,7 +256,7 @@ flowers:
 
   # Instrucciones de uso
   instructions:
-    how-to: "&e🌸 Para regalar una flor: &aSostén una flor, agáchate y haz click derecho."
+    how-to: "&e🌸 Para regalar una flor: &aSostén una flor y haz click derecho sobre tu pareja."
     only-flowers: "&c🌸 Solo puedes regalar flores a tu pareja."
 
   # Nombres de flores personalizados
@@ -278,21 +278,6 @@ flowers:
     rose_bush: "un rosal"
     peony: "una peonía"
     wither_rose: "una rosa marchita"
-
-  # Mensajes románticos aleatorios
-  romantic_messages:
-    - "Con amor eterno"
-    - "Para ti, mi amor"
-    - "Eres la flor más bella de mi jardín"
-    - "Esta flor no se compara con tu belleza"
-    - "Un pequeño detalle para ti ❤"
-    - "Como esta flor, mi amor por ti nunca se marchitará"
-    - "Para la persona más especial de mi vida"
-    - "Cada pétalo representa un motivo por el que te amo"
-    - "Mi corazón florece contigo"
-    - "Eres mi primavera eterna"
-    - "Florecemos juntos como un jardín"
-    - "Eres el sol que hace crecer mis flores"
 # ========================================
 # COLORES Y SÍMBOLOS
 # ========================================
