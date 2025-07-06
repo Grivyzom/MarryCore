@@ -8,6 +8,7 @@ import gc.grivyzom.marryCore.utils.ValidationUtils;
 import gc.grivyzom.marryCore.items.ItemManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -52,7 +53,7 @@ public class MarryCommand implements CommandExecutor {
             return true;
         }
 
-        // NUEVA FUNCIONALIDAD: Comando para hacer regalos
+        // FUNCIONALIDAD MEJORADA: Comando para hacer regalos (CON VALIDACIONES)
         if (args.length > 0 && args[0].equalsIgnoreCase("gift")) {
             return handleGiftCommand(player);
         }
@@ -149,7 +150,7 @@ public class MarryCommand implements CommandExecutor {
     }
 
     /**
-     * Maneja el comando de regalo entre parejas
+     * Maneja el comando de regalo entre parejas CON VALIDACIONES MEJORADAS
      */
     private boolean handleGiftCommand(Player player) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -174,8 +175,14 @@ public class MarryCommand implements CommandExecutor {
 
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     ItemStack item = player.getInventory().getItemInMainHand();
-                    if (item == null || item.getType() == org.bukkit.Material.AIR) {
+                    if (item == null || item.getType() == Material.AIR) {
                         player.sendMessage("§c♥ Debes sostener el item que quieras regalar en tu mano.");
+                        return;
+                    }
+
+                    // NUEVA VALIDACIÓN: Verificar que no sea un ítem protegido
+                    if (isProtectedItem(item)) {
+                        player.sendMessage("§c♥ No puedes regalar este ítem especial.");
                         return;
                     }
 
@@ -224,6 +231,39 @@ public class MarryCommand implements CommandExecutor {
         });
 
         return true;
+    }
+
+    /**
+     * NUEVA FUNCIÓN: Verifica si un ítem está protegido y no se puede regalar
+     */
+    private boolean isProtectedItem(ItemStack item) {
+        if (!item.hasItemMeta() || !item.getItemMeta().hasDisplayName()) {
+            return false;
+        }
+
+        String displayName = item.getItemMeta().getDisplayName();
+
+        // Verificar anillos de propuesta
+        if (itemManager.isProposalRing(item)) {
+            return true;
+        }
+
+        // Verificar anillos nupciales
+        if (displayName.contains("💍 Anillo Nupcial 💍")) {
+            return true;
+        }
+
+        // Verificar anillos de boda
+        if (displayName.contains("💖 Anillo de Boda 💖")) {
+            return true;
+        }
+
+        // Verificar invitaciones de boda
+        if (displayName.contains("📜 Invitación de Boda 📜")) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -345,7 +385,7 @@ public class MarryCommand implements CommandExecutor {
         }
     }
 
-    // Método para manejar cuando un jugador acepta una propuesta
+    // MÉTODO MEJORADO: Manejar cuando un jugador acepta una propuesta
     public static boolean acceptProposal(Player target) {
         UUID proposerUUID = pendingProposals.remove(target.getUniqueId());
 
@@ -363,7 +403,7 @@ public class MarryCommand implements CommandExecutor {
         // Procesar compromiso de forma asíncrona
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                // Cambiar estados en la base de datos
+                // CORRECCIÓN: Cambiar estados Y crear registro de matrimonio correctamente
                 plugin.getDatabaseManager().createEngagement(proposer.getUniqueId(), target.getUniqueId());
 
                 // Volver al hilo principal para operaciones del servidor
@@ -392,10 +432,14 @@ public class MarryCommand implements CommandExecutor {
 
                     // Efectos especiales
                     itemManager.playEngagementEffects(proposer, target);
+
+                    // LOG PARA DEBUG
+                    plugin.getLogger().info("Compromiso registrado: " + proposer.getName() + " <-> " + target.getName());
                 });
 
             } catch (Exception e) {
                 plugin.getLogger().severe("Error al procesar compromiso: " + e.getMessage());
+                e.printStackTrace();
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     MessageUtils messageUtils = new MessageUtils(plugin);
                     messageUtils.sendMessage(proposer, "general.database-error");

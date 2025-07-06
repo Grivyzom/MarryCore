@@ -233,4 +233,106 @@ public class WeddingCommand implements CommandExecutor {
 
         return "Ubicación por defecto";
     }
+
+
+    /**
+     * NUEVO MÉTODO: Completar ceremonia y crear matrimonio oficial
+     */
+    public void completeWedding(Player player1, Player player2) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                // Verificar que ambos estén comprometidos
+                ValidationUtils.ValidationResult validation = validationUtils.canMarry(player1, player2);
+
+                if (validation.isFailure()) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        messageUtils.sendMessage(player1, validation.getErrorMessage(), validation.getReplacements());
+                        messageUtils.sendMessage(player2, validation.getErrorMessage(), validation.getReplacements());
+                    });
+                    return;
+                }
+
+                // CREAR MATRIMONIO OFICIAL
+                plugin.getDatabaseManager().createMarriage(player1.getUniqueId(), player2.getUniqueId());
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    // Dar anillos de boda
+                    String currentDate = java.time.LocalDate.now().toString();
+                    new gc.grivyzom.marryCore.items.ItemManager(plugin).giveWeddingRing(player1, player2.getName(), currentDate);
+                    new gc.grivyzom.marryCore.items.ItemManager(plugin).giveWeddingRing(player2, player1.getName(), currentDate);
+
+                    // Mensajes de éxito
+                    messageUtils.sendMessage(player1, "ceremony.completion.marriage-success",
+                            "{player1}", player1.getName(),
+                            "{player2}", player2.getName());
+                    messageUtils.sendMessage(player2, "ceremony.completion.marriage-success",
+                            "{player1}", player1.getName(),
+                            "{player2}", player2.getName());
+
+                    // Anuncio global
+                    if (plugin.getConfig().getBoolean("chat.announcements.marriages", true)) {
+                        messageUtils.broadcastMessage("ceremony.completion.marriage-success",
+                                "{player1}", player1.getName(),
+                                "{player2}", player2.getName());
+                    }
+
+                    // Efectos especiales
+                    try {
+                        new gc.grivyzom.marryCore.items.ItemManager(plugin).playEngagementEffects(player1, player2);
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("Error al reproducir efectos de boda: " + e.getMessage());
+                    }
+
+                    plugin.getLogger().info("Matrimonio completado exitosamente: " + player1.getName() + " <-> " + player2.getName());
+                });
+
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error al completar ceremonia: " + e.getMessage());
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    messageUtils.sendMessage(player1, "general.database-error");
+                    messageUtils.sendMessage(player2, "general.database-error");
+                });
+            }
+        });
+    }
+
+    /**
+     * COMANDO MEJORADO: Casamiento instantáneo para administradores
+     */
+    public void forceMarry(Player admin, Player player1, Player player2) {
+        if (!admin.hasPermission("marrycore.admin.force")) {
+            messageUtils.sendMessage(admin, "general.no-permission");
+            return;
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                // Forzar compromiso primero si no están comprometidos
+                plugin.getDatabaseManager().createEngagement(player1.getUniqueId(), player2.getUniqueId());
+
+                // Luego forzar matrimonio
+                plugin.getDatabaseManager().createMarriage(player1.getUniqueId(), player2.getUniqueId());
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    // Dar anillos
+                    String currentDate = java.time.LocalDate.now().toString();
+                    new gc.grivyzom.marryCore.items.ItemManager(plugin).giveWeddingRing(player1, player2.getName(), currentDate);
+                    new gc.grivyzom.marryCore.items.ItemManager(plugin).giveWeddingRing(player2, player1.getName(), currentDate);
+
+                    // Notificar a todos
+                    admin.sendMessage("§a¡Has casado exitosamente a " + player1.getName() + " y " + player2.getName() + "!");
+                    player1.sendMessage("§a¡Has sido casado/a con " + player2.getName() + " por un administrador!");
+                    player2.sendMessage("§a¡Has sido casado/a con " + player1.getName() + " por un administrador!");
+
+                    plugin.getLogger().info("Matrimonio forzado por " + admin.getName() + ": " + player1.getName() + " <-> " + player2.getName());
+                });
+
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error al forzar matrimonio: " + e.getMessage());
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    admin.sendMessage("§cError al procesar el matrimonio forzado.");
+                });
+            }
+        });
+    }
 }

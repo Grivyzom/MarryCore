@@ -1,7 +1,7 @@
 # ========================================
 # MarryCore - Mensajes del Sistema
 # Autor: Brocolitx
-# Versión: 0.0.1
+# Versión: 0.0.1 - ACTUALIZADO
 # ========================================
 
 # Prefijo general del plugin
@@ -16,6 +16,7 @@ general:
   invalid-command: "&cComando inválido. Usa: &e{usage}"
   reload-success: "&aConfiguración recargada correctamente."
   database-error: "&cError de base de datos. Contacta a un administrador."
+  confirmation-timeout: "&eEsta confirmación expirará en &c{time} &esegundos."
 
 # ========================================
 # SISTEMA DE MATRIMONIO
@@ -29,16 +30,18 @@ marriage:
     target-married: "&e{player} &cya está casado/a con otra persona."
     already-engaged: "&cYa estás comprometido/a con alguien."
     target-engaged: "&e{player} &cya está comprometido/a con otra persona."
+    already-pending: "&cYa hay una propuesta pendiente para este jugador."
     proposal-sent: "&aHas propuesto matrimonio a &e{player}&a. Esperando respuesta..."
     proposal-received: "&e{player} &ate ha propuesto matrimonio!"
     proposal-instruction: "&aEscribe &e'aceptar' &aen el chat para aceptar la propuesta."
     proposal-timeout: "&cLa propuesta de matrimonio ha expirado."
+    too-far: "&cDebes estar a menos de &e{distance} &cbloques para proponer matrimonio."
 
   # Aceptar propuesta
   accept:
     no-proposal: "&cNo tienes ninguna propuesta de matrimonio pendiente."
     proposal-expired: "&cLa propuesta de matrimonio ha expirado."
-    engagement-success: "&a¡Felicidades! &eNow estás comprometido/a con &e{player}&a!"
+    engagement-success: "&a¡Felicidades! &eAhora estás comprometido/a con &e{player}&a!"
     engagement-announcement: "&e¡{player1} &ay &e{player2} &ase han comprometido! &l¡Felicidades!"
     rings-received: "&aHas recibido un &eAnillo Nupcial&a."
 
@@ -56,9 +59,10 @@ wedding:
   schedule:
     not-engaged: "&cDebes estar comprometido/a para programar una ceremonia."
     invalid-date: "&cFecha inválida. Formato: &eAAAA-MM-DD &c(opcional: HH:MM)"
-    date-too-early: "&cLa fecha debe ser al menos 1 día en el futuro."
-    date-too-late: "&cLa fecha no puede ser más de 30 días en el futuro."
+    date-too-early: "&cLa fecha debe ser al menos &e{days} &cdía(s) en el futuro."
+    date-too-late: "&cLa fecha no puede ser más de &e{days} &cdías en el futuro."
     date-occupied: "&cEsa fecha ya está ocupada por otra ceremonia."
+    invalid-time: "&cHora inválida. Revisa las horas permitidas para ceremonias."
     ceremony-scheduled: "&a¡Ceremonia programada para el &e{date} &aa las &e{time}&a!"
     location-assigned: "&aUbicación asignada: &e{location}"
 
@@ -111,17 +115,20 @@ ceremony:
 guests:
   add:
     not-engaged: "&cDebes estar comprometido/a para invitar personas."
+    cannot-invite-self: "&cNo puedes invitarte a ti mismo."
     already-invited: "&e{player} &cya está en la lista de invitados."
     limit-reached: "&cHas alcanzado el límite máximo de invitados (&e{max}&c)."
     invitation-sent: "&aHas invitado a &e{player} &aa tu ceremonia."
     invitation-received: "&e{player} &ate ha invitado a su ceremonia de matrimonio."
 
   remove:
+    not-engaged: "&cDebes estar comprometido/a para gestionar invitados."
     not-invited: "&e{player} &cno está en tu lista de invitados."
     guest-removed: "&aHas removido a &e{player} &ade la lista de invitados."
     invitation-revoked: "&cTu invitación a la ceremonia de &e{player} &cha sido revocada."
 
   list:
+    not-engaged: "&cNo tienes ninguna ceremonia programada."
     empty: "&cNo tienes invitados en tu lista."
     header: "&a&l====== LISTA DE INVITADOS ======"
     guest-entry: "&e{index}. &f{player} &7({status})"
@@ -132,26 +139,50 @@ guests:
     confirmation-sent: "&aHas confirmado tu asistencia a la ceremonia de &e{player}&a."
     guest-confirmed: "&e{player} &aha confirmado su asistencia a tu ceremonia."
 
+  decline:
+    not-invited: "&cNo tienes invitaciones pendientes."
+    invitation-declined: "&cHas rechazado la invitación a la ceremonia de &e{player}&c."
+    guest-declined: "&e{player} &cha rechazado la invitación a tu ceremonia."
+
+  help:
+    - "&a&l====== AYUDA DE INVITADOS ======"
+    - "&e/invitados add <jugador> &7- Invitar a la ceremonia"
+    - "&e/invitados remove <jugador> &7- Remover invitado"
+    - "&e/invitados list &7- Ver lista de invitados"
+    - "&e/invitados confirmar &7- Confirmar asistencia"
+    - "&e/invitados rechazar &7- Rechazar invitación"
+    - "&a&l================================"
+
 # ========================================
 # SISTEMA DE DIVORCIO
 # ========================================
 divorce:
-  not-married: "&cNo estás casado/a con nadie."
+  not-married: "&cNo estás casado/a o comprometido/a con nadie."
   confirmation-required: "&cEscribe &e/divorcio confirmar &cpara proceder con el divorcio."
+  no-confirmation-pending: "&cNo tienes ninguna confirmación de divorcio pendiente."
+  confirmation-expired: "&cLa confirmación de divorcio ha expirado."
   processing: "&eProcesando divorcio..."
   success: "&aTe has divorciado de &e{player}&a."
   notification: "&e{player} &ase ha divorciado de ti."
   announcement: "&e{player1} &ay &e{player2} &ase han divorciado."
+  cooldown-active: "&cDebes esperar &e{days} &cdías antes de poder divorciarte nuevamente."
 
 # ========================================
 # BENEFICIOS DE MATRIMONIO
 # ========================================
 benefits:
   teleport:
-    cooldown: "&cDebes esperar &e{time} &cantes de teletransportarte a tu cónyuge."
+    disabled: "&cEl teletransporte al cónyuge está deshabilitado."
+    not-married: "&cDebes estar casado/a para usar el teletransporte."
+    no-partner: "&cNo tienes pareja a quien teletransportarte."
     partner-offline: "&cTu cónyuge no está conectado."
+    cooldown: "&cDebes esperar &e{time} &cantes de teletransportarte a tu cónyuge."
+    insufficient-experience: "&cNecesitas al menos &e{cost} &cniveles de experiencia."
+    in-combat: "&cNo puedes teletransportarte mientras estás en combate."
+    cancelled-moved: "&cTeletransporte cancelado porque te moviste."
     teleporting: "&aTeletransportándote a &e{player}&a..."
     teleport-success: "&a¡Te has teletransportado a tu cónyuge!"
+    spouse-teleported: "&aTu pareja &e{player} &ase ha teletransportado a ti."
 
   experience:
     bonus-received: "&a+{amount}% experiencia por trabajar con tu cónyuge."
@@ -160,15 +191,54 @@ benefits:
     available: "&aTienes una misión diaria disponible con tu cónyuge."
     completed: "&a¡Misión diaria completada! Recompensa: &e{reward}"
 
+  death:
+    spouse-died: "&c♥ Tu pareja &e{player} &cha muerto en &f{location}&c."
+
+  private-chat:
+    enabled: "&aChat privado habilitado. Usa &e/{command} <mensaje>&a."
+    disabled: "&cEl chat privado está deshabilitado."
+
 # ========================================
 # COMANDOS DE ADMINISTRACIÓN
 # ========================================
 admin:
-  force-divorce: "&aHas forzado el divorcio entre &e{player1} &ay &e{player2}&a."
-  force-marriage: "&aHas forzado el matrimonio entre &e{player1} &ay &e{player2}&a."
-  give-ring: "&aHas dado un &e{ring_type} &aa &e{player}&a."
-  reset-player: "&aHas reiniciado los datos de matrimonio de &e{player}&a."
+  force-engagement:
+    success: "&aHas forzado el compromiso entre &e{player1} &ay &e{player2}&a."
+    notification: "&aHas sido comprometido/a con &e{player} &apor un administrador."
 
+  force-marriage:
+    success: "&aHas forzado el matrimonio entre &e{player1} &ay &e{player2}&a."
+    notification: "&aHas sido casado/a con &e{player} &apor un administrador."
+
+  force-divorce:
+    success: "&aHas forzado el divorcio entre &e{player1} &ay &e{player2}&a."
+    notification: "&cHas sido divorciado/a por un administrador."
+
+  give-ring:
+    success: "&aHas dado un &e{ring_type} &aa &e{player}&a."
+
+  reset-player:
+    success: "&aHas reiniciado los datos de matrimonio de &e{player}&a."
+    notification: "&cTus datos de matrimonio han sido reiniciados por un administrador."
+
+  repair-database:
+    success: "&aBase de datos reparada. &e{count} &aregistros corregidos."
+    no-issues: "&aNo se encontraron problemas en la base de datos."
+
+# ========================================
+# NUEVOS MENSAJES PARA CORRECCIONES
+# ========================================
+debug:
+  status-synced: "&aEstado sincronizado para &e{player}&a: &f{status}"
+  marriage-recorded: "&aMatrimonio registrado correctamente en la base de datos."
+  engagement-recorded: "&aCompromiso registrado correctamente en la base de datos."
+
+gifts:
+  protected-item: "&c♥ No puedes regalar este ítem especial."
+  item-protected: "&cEste ítem está protegido y no se puede regalar."
+
+kisses:
+  cooldown-active: "&c♥ Debes esperar &e{seconds} &csegundos antes de dar otro beso."
 # ========================================
 # COLORES Y SÍMBOLOS
 # ========================================

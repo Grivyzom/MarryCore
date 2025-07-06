@@ -5,6 +5,8 @@ import gc.grivyzom.marryCore.enums.MaritalStatus;
 import gc.grivyzom.marryCore.models.MarryPlayer;
 
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -180,6 +182,10 @@ public class DatabaseManager {
      * @param player2Uuid UUID del segundo jugador
      * @throws SQLException Si hay error en la base de datos
      */
+    /**
+     * MÉTODO CORREGIDO: Crea un compromiso entre dos jugadores
+     * Mejorado para registrar correctamente los datos
+     */
     public void createEngagement(UUID player1Uuid, UUID player2Uuid) throws SQLException {
         Connection conn = getConnection();
 
@@ -194,13 +200,23 @@ public class DatabaseManager {
             updatePlayerPartner(player1Uuid, player2Uuid);
             updatePlayerPartner(player2Uuid, player1Uuid);
 
-            // Crear registro en tabla de matrimonios
-            String marriageQuery = "INSERT INTO marry_marriages (player1_uuid, player2_uuid, status) VALUES (?, ?, ?)";
+            // CORRECCIÓN: Crear registro en tabla de matrimonios con mejor manejo
+            String marriageQuery = """
+                INSERT INTO marry_marriages (player1_uuid, player2_uuid, status, engagement_date, created_at, updated_at) 
+                VALUES (?, ?, 'comprometido', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """;
+
             try (PreparedStatement stmt = conn.prepareStatement(marriageQuery)) {
                 stmt.setString(1, player1Uuid.toString());
                 stmt.setString(2, player2Uuid.toString());
-                stmt.setString(3, "comprometido");
-                stmt.executeUpdate();
+
+                int rowsInserted = stmt.executeUpdate();
+
+                if (rowsInserted == 0) {
+                    throw new SQLException("No se pudo crear el registro de compromiso en la base de datos");
+                }
+
+                plugin.getLogger().info("Compromiso registrado correctamente en la base de datos");
             }
 
             conn.commit(); // Confirmar transacción
@@ -214,11 +230,85 @@ public class DatabaseManager {
     }
 
     /**
+     * NUEVO MÉTODO: Obtiene la fecha de matrimonio real de un jugador
+     */
+    public Timestamp getActualWeddingDate(UUID playerUuid) throws SQLException {
+        String query = """
+            SELECT wedding_date FROM marry_marriages 
+            WHERE (player1_uuid = ? OR player2_uuid = ?) 
+            AND status = 'casado' 
+            AND wedding_date IS NOT NULL
+            ORDER BY wedding_date DESC 
+            LIMIT 1
+        """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setString(1, playerUuid.toString());
+            stmt.setString(2, playerUuid.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getTimestamp("wedding_date");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * NUEVO MÉTODO: Obtiene información completa del matrimonio activo de un jugador
+     */
+    public Map<String, Object> getActiveMarriageInfo(UUID playerUuid) throws SQLException {
+        String query = """
+            SELECT m.*, 
+                   p1.username as player1_name,
+                   p2.username as player2_name
+            FROM marry_marriages m
+            INNER JOIN marry_players p1 ON m.player1_uuid = p1.uuid
+            INNER JOIN marry_players p2 ON m.player2_uuid = p2.uuid
+            WHERE (m.player1_uuid = ? OR m.player2_uuid = ?)
+            AND m.status IN ('comprometido', 'casado')
+            ORDER BY m.updated_at DESC
+            LIMIT 1
+        """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setString(1, playerUuid.toString());
+            stmt.setString(2, playerUuid.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("id", rs.getInt("id"));
+                    info.put("player1_uuid", rs.getString("player1_uuid"));
+                    info.put("player2_uuid", rs.getString("player2_uuid"));
+                    info.put("player1_name", rs.getString("player1_name"));
+                    info.put("player2_name", rs.getString("player2_name"));
+                    info.put("status", rs.getString("status"));
+                    info.put("engagement_date", rs.getTimestamp("engagement_date"));
+                    info.put("wedding_date", rs.getTimestamp("wedding_date"));
+                    info.put("ceremony_location", rs.getString("ceremony_location"));
+                    info.put("created_at", rs.getTimestamp("created_at"));
+                    info.put("updated_at", rs.getTimestamp("updated_at"));
+                    return info;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Convierte un compromiso en matrimonio
      *
      * @param player1Uuid UUID del primer jugador
      * @param player2Uuid UUID del segundo jugador
      * @throws SQLException Si hay error en la base de datos
+     */
+    /**
+     * MÉTODO CORREGIDO: Convierte un compromiso en matrimonio
+     * Ahora registra correctamente la fecha de casamiento
      */
     public void createMarriage(UUID player1Uuid, UUID player2Uuid) throws SQLException {
         Connection conn = getConnection();
@@ -230,10 +320,12 @@ public class DatabaseManager {
             updatePlayerStatus(player1Uuid, MaritalStatus.CASADO);
             updatePlayerStatus(player2Uuid, MaritalStatus.CASADO);
 
-            // Actualizar registro de matrimonio
+            // CORRECCIÓN: Actualizar registro de matrimonio con fecha actual
             String marriageQuery = """
                 UPDATE marry_marriages 
-                SET status = 'casado', wedding_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+                SET status = 'casado', 
+                    wedding_date = CURRENT_TIMESTAMP, 
+                    updated_at = CURRENT_TIMESTAMP 
                 WHERE (player1_uuid = ? AND player2_uuid = ?) OR (player1_uuid = ? AND player2_uuid = ?) 
                 AND status = 'comprometido'
             """;
@@ -243,7 +335,15 @@ public class DatabaseManager {
                 stmt.setString(2, player2Uuid.toString());
                 stmt.setString(3, player2Uuid.toString());
                 stmt.setString(4, player1Uuid.toString());
-                stmt.executeUpdate();
+
+                int rowsUpdated = stmt.executeUpdate();
+
+                // Verificar que se actualizó correctamente
+                if (rowsUpdated == 0) {
+                    throw new SQLException("No se pudo actualizar el registro de matrimonio. Verifique que estén comprometidos.");
+                }
+
+                plugin.getLogger().info("Matrimonio registrado correctamente en la base de datos");
             }
 
             conn.commit(); // Confirmar transacción
@@ -356,6 +456,83 @@ public class DatabaseManager {
 
             stmt.executeUpdate();
         }
+    }
+
+
+
+
+    /**
+     * MÉTODO CORREGIDO: Obtiene información de estado más precisa
+     */
+    public MaritalStatus getActualMaritalStatus(UUID playerUuid) throws SQLException {
+        // Primero verificar en la tabla de matrimonios
+        String marriageQuery = """
+            SELECT status FROM marry_marriages 
+            WHERE (player1_uuid = ? OR player2_uuid = ?) 
+            AND status IN ('comprometido', 'casado')
+            ORDER BY updated_at DESC 
+            LIMIT 1
+        """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(marriageQuery)) {
+            stmt.setString(1, playerUuid.toString());
+            stmt.setString(2, playerUuid.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String status = rs.getString("status");
+                    return MaritalStatus.fromDatabase(status);
+                }
+            }
+        }
+
+        // Si no hay registro de matrimonio, verificar en la tabla de jugadores
+        MarryPlayer playerData = getPlayerData(playerUuid);
+        return playerData.getStatus();
+    }
+    /**
+     * NUEVO MÉTODO: Sincroniza el estado del jugador con los registros de matrimonio
+     */
+    public void synchronizePlayerStatus(UUID playerUuid) throws SQLException {
+        MaritalStatus actualStatus = getActualMaritalStatus(playerUuid);
+
+        // Solo actualizar si el estado es diferente
+        MarryPlayer currentData = getPlayerData(playerUuid);
+        if (currentData.getStatus() != actualStatus) {
+            updatePlayerStatus(playerUuid, actualStatus);
+
+            plugin.getLogger().info("Estado sincronizado para jugador " + playerUuid + ": " + actualStatus);
+        }
+    }
+
+    /**
+     * NUEVO MÉTODO: Verifica y corrige inconsistencias en los datos
+     */
+    public int validateAndFixData() throws SQLException {
+        int fixedCount = 0;
+
+        // Obtener todos los jugadores con pareja
+        String query = "SELECT uuid, partner_uuid, status FROM marry_players WHERE partner_uuid IS NOT NULL";
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    UUID playerUuid = UUID.fromString(rs.getString("uuid"));
+                    String currentStatus = rs.getString("status");
+
+                    // Verificar estado real en matrimonios
+                    MaritalStatus realStatus = getActualMaritalStatus(playerUuid);
+
+                    if (!realStatus.getDatabaseValue().equals(currentStatus)) {
+                        updatePlayerStatus(playerUuid, realStatus);
+                        fixedCount++;
+                        plugin.getLogger().info("Corregido estado de " + playerUuid + " de " + currentStatus + " a " + realStatus);
+                    }
+                }
+            }
+        }
+
+        return fixedCount;
     }
 
     /**
@@ -641,6 +818,7 @@ public class DatabaseManager {
         return null;
     }
 
+
     /**
      * Obtiene la ubicación de ceremonia de un matrimonio
      *
@@ -686,6 +864,7 @@ public class DatabaseManager {
 
         return null;
     }
+
 
     /**
      * Obtiene la lista de invitados de un matrimonio
@@ -1070,5 +1249,27 @@ public class DatabaseManager {
         }
 
         return null;
+    }
+
+    /**
+     * MÉTODO IMPLEMENTADO: Comando de administración para verificar y reparar datos
+     */
+    public void runMaintenanceCheck() throws SQLException {
+        plugin.getLogger().info("=== INICIO DE VERIFICACIÓN DE MANTENIMIENTO ===");
+
+        // 1. Verificar y corregir estados inconsistentes
+        int fixedStates = validateAndFixData();
+        plugin.getLogger().info("Estados corregidos: " + fixedStates);
+
+        // 2. Limpiar referencias de parejas rotas
+        int repairedReferences = repairDatabase();
+        plugin.getLogger().info("Referencias reparadas: " + repairedReferences);
+
+        // 3. Mostrar estadísticas finales
+        int[] stats = getSystemStats();
+        plugin.getLogger().info("Estado final - Total: " + stats[0] + ", Solteros: " + stats[1] +
+                ", Comprometidos: " + stats[2] + ", Casados: " + stats[3]);
+
+        plugin.getLogger().info("=== FIN DE VERIFICACIÓN DE MANTENIMIENTO ===");
     }
 }

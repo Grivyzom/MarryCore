@@ -118,16 +118,26 @@ public class AdminCommand implements CommandExecutor {
                 testPlaceholder(sender, args);
                 break;
 
+
             case "debug":
                 showDebugInfo(sender);
                 break;
 
-            case "help":
-                showHelp(sender);
+            case "check":
+                checkPlayerStatus(sender, args.length > 1 ? args[1] : null);
                 break;
 
-            default:
-                sender.sendMessage("§cComando desconocido. Usa /marrycore help para ver la ayuda.");
+            case "sync":
+                if (args.length < 2) {
+                    sender.sendMessage("§cUso: /marrycore sync <jugador>");
+                    return true;
+                }
+                syncPlayerStatus(sender, args[1]);
+                break;
+
+
+            case "help":
+                showHelp(sender);
                 break;
         }
 
@@ -397,9 +407,11 @@ public class AdminCommand implements CommandExecutor {
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
+                // CORRECCIÓN: Usar el método mejorado que registra correctamente
                 // Primero comprometer si no lo están
                 plugin.getDatabaseManager().createEngagement(player1.getUniqueId(), player2.getUniqueId());
-                // Luego casar
+
+                // Luego casar CORRECTAMENTE
                 plugin.getDatabaseManager().createMarriage(player1.getUniqueId(), player2.getUniqueId());
 
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -419,12 +431,109 @@ public class AdminCommand implements CommandExecutor {
 
                     // Efectos especiales
                     itemManager.playEngagementEffects(player1, player2);
+
+                    // NUEVO: Log para verificación
+                    plugin.getLogger().info("Matrimonio forzado completado por " + sender.getName() + ": "
+                            + player1.getName() + " <-> " + player2.getName());
+
+                    // NUEVO: Verificar estado después del matrimonio
+                    Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                        try {
+                            var p1Data = plugin.getDatabaseManager().getPlayerData(player1.getUniqueId());
+                            var p2Data = plugin.getDatabaseManager().getPlayerData(player2.getUniqueId());
+
+                            plugin.getLogger().info("Estado verificado - " + player1.getName() + ": " + p1Data.getStatus());
+                            plugin.getLogger().info("Estado verificado - " + player2.getName() + ": " + p2Data.getStatus());
+
+                        } catch (Exception e) {
+                            plugin.getLogger().warning("Error al verificar estados: " + e.getMessage());
+                        }
+                    }, 20L); // 1 segundo después
                 });
 
             } catch (Exception e) {
                 plugin.getLogger().severe("Error al forzar matrimonio: " + e.getMessage());
+                e.printStackTrace();
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    sender.sendMessage("§cError al forzar el matrimonio.");
+                    sender.sendMessage("§cError al forzar el matrimonio: " + e.getMessage());
+                });
+            }
+        });
+    }
+
+    /**
+     * NUEVO MÉTODO: Verificar estado de un jugador
+     */
+    private void checkPlayerStatus(CommandSender sender, String playerName) {
+        Player player = Bukkit.getPlayer(playerName);
+
+        if (player == null) {
+            sender.sendMessage("§cEl jugador no está conectado.");
+            return;
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                // Obtener datos actuales
+                var playerData = plugin.getDatabaseManager().getPlayerData(player.getUniqueId());
+
+                // Obtener estado real de la base de datos
+                var actualStatus = plugin.getDatabaseManager().getActualMaritalStatus(player.getUniqueId());
+
+                // Obtener información de matrimonio activo
+                var marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(player.getUniqueId());
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    sender.sendMessage("§a§l====== VERIFICACIÓN DE ESTADO ======");
+                    sender.sendMessage("§eJugador: §f" + player.getName());
+                    sender.sendMessage("§eEstado en tabla jugadores: §f" + playerData.getStatus().getDisplayName());
+                    sender.sendMessage("§eEstado real calculado: §f" + actualStatus.getDisplayName());
+
+                    if (marriageInfo != null) {
+                        sender.sendMessage("§eMatrimonio activo: §aYes");
+                        sender.sendMessage("§eEstado matrimonio: §f" + marriageInfo.get("status"));
+                        sender.sendMessage("§eFecha compromiso: §f" + marriageInfo.get("engagement_date"));
+                        sender.sendMessage("§eFecha boda: §f" + marriageInfo.get("wedding_date"));
+                    } else {
+                        sender.sendMessage("§eMatrimonio activo: §cNo");
+                    }
+
+                    sender.sendMessage("§a§l=====================================");
+                });
+
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error al verificar estado: " + e.getMessage());
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    sender.sendMessage("§cError al verificar el estado.");
+                });
+            }
+        });
+    }
+
+    /**
+     * NUEVO MÉTODO: Sincronizar estado de un jugador
+     */
+    private void syncPlayerStatus(CommandSender sender, String playerName) {
+        Player player = Bukkit.getPlayer(playerName);
+
+        if (player == null) {
+            sender.sendMessage("§cEl jugador no está conectado.");
+            return;
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                // Sincronizar estado
+                plugin.getDatabaseManager().synchronizePlayerStatus(player.getUniqueId());
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    sender.sendMessage("§aEstado sincronizado para " + player.getName());
+                });
+
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error al sincronizar estado: " + e.getMessage());
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    sender.sendMessage("§cError al sincronizar el estado.");
                 });
             }
         });

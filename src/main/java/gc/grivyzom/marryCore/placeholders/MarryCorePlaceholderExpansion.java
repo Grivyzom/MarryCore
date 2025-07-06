@@ -16,13 +16,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Expansion de PlaceholderAPI para MarryCore.
  * Proporciona placeholders relacionados con el sistema de matrimonio.
+ * VERSIÓN CORREGIDA: Incluye métodos mejorados para obtener datos reales.
  *
  * @author Brocolitx
  * @version 0.0.1
@@ -33,14 +35,14 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
 
     // Cache para mejorar el rendimiento
     private final ConcurrentHashMap<String, PlaceholderCache> cache = new ConcurrentHashMap<>();
-    private static final long CACHE_DURATION = TimeUnit.MINUTES.toMillis(5); // 5 minutos
+    private static final long CACHE_DURATION = TimeUnit.MINUTES.toMillis(2); // Reducido a 2 minutos para datos más actuales
 
     public MarryCorePlaceholderExpansion(MarryCore plugin) {
         this.plugin = plugin;
 
         // Limpiar cache periódicamente
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::cleanExpiredCache,
-                20L * 60 * 5, 20L * 60 * 5); // Cada 5 minutos
+                20L * 60 * 2, 20L * 60 * 2); // Cada 2 minutos
     }
 
     @Override
@@ -74,21 +76,22 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
             return null;
         }
 
-        // Verificar cache
+        // Verificar cache solo para datos menos críticos
         String cacheKey = player.getUniqueId() + ":" + params;
-        PlaceholderCache cached = cache.get(cacheKey);
-
-        if (cached != null && !cached.isExpired()) {
-            return cached.getValue();
+        if (!isCriticalPlaceholder(params)) {
+            PlaceholderCache cached = cache.get(cacheKey);
+            if (cached != null && !cached.isExpired()) {
+                return cached.getValue();
+            }
         }
 
         try {
-            // Obtener datos del jugador
-            MarryPlayer playerData = plugin.getDatabaseManager().getPlayerData(player.getUniqueId());
+            // CORRECCIÓN: Obtener datos actualizados y sincronizados
+            MarryPlayer playerData = getUpdatedPlayerData(player.getUniqueId());
             String result = processPlaceholder(player, playerData, params);
 
-            // Guardar en cache
-            if (result != null) {
+            // Guardar en cache solo datos no críticos
+            if (result != null && !isCriticalPlaceholder(params)) {
                 cache.put(cacheKey, new PlaceholderCache(result, System.currentTimeMillis()));
             }
 
@@ -101,38 +104,63 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
     }
 
     /**
-     * Procesa un placeholder específico
+     * NUEVO MÉTODO: Determina si un placeholder es crítico y no debe usar cache
+     */
+    private boolean isCriticalPlaceholder(String params) {
+        String lower = params.toLowerCase();
+        return lower.equals("status") || lower.equals("name") || lower.equals("is_married") ||
+                lower.equals("is_engaged") || lower.equals("is_single") || lower.equals("has_partner");
+    }
+
+    /**
+     * NUEVO MÉTODO: Obtiene datos actualizados del jugador
+     */
+    private MarryPlayer getUpdatedPlayerData(UUID playerUuid) throws SQLException {
+        // Primero sincronizar el estado si es necesario
+        try {
+            plugin.getDatabaseManager().synchronizePlayerStatus(playerUuid);
+        } catch (Exception e) {
+            // Si la sincronización falla, continuar con los datos existentes
+            plugin.getLogger().warning("Error al sincronizar estado para placeholder: " + e.getMessage());
+        }
+
+        // Luego obtener los datos actualizados
+        return plugin.getDatabaseManager().getPlayerData(playerUuid);
+    }
+
+    /**
+     * MÉTODO CORREGIDO: Procesa placeholders con mejor precisión
      */
     private String processPlaceholder(OfflinePlayer player, MarryPlayer playerData, String params) throws SQLException {
         switch (params.toLowerCase()) {
 
-            // Estado civil actual
+            // CORREGIDO: Estado civil actual (obtiene el estado real)
             case "status":
-                return getStatusDisplay(playerData.getStatus());
+                return getActualStatusDisplay(playerData);
 
             // Tiempo en el estado actual
             case "status_time":
                 return getStatusTime(playerData);
 
-            // Nombre del cónyuge/comprometido
+            // CORREGIDO: Nombre del cónyuge/comprometido (verifica datos reales)
             case "name":
-                return getPartnerName(playerData);
+                return getActualPartnerName(playerData);
 
-            // Fecha de casamiento
+            // CORREGIDO: Fecha de casamiento (obtiene de base de datos)
             case "casamiento":
-                return getWeddingDate(playerData);
+                return getActualWeddingDate(playerData);
 
-            // Fecha de compromiso
+            // CORREGIDO: Fecha de compromiso (obtiene de base de datos)
             case "compromiso":
-                return getEngagementDate(playerData);
+                return getActualEngagementDate(playerData);
 
             // Estado con emoji
             case "status_emoji":
-                return getStatusWithEmoji(playerData.getStatus());
+                return getStatusWithEmoji(getActualStatus(playerData));
 
-            // Días casado
+            // CORREGIDO: Días casado (calcula desde fecha real de matrimonio)
             case "dias_casado":
-                return getDaysMarried(playerData);
+                return getActualDaysMarried(playerData);
 
             // Días comprometido
             case "dias_comprometido":
@@ -154,9 +182,35 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
             case "dias_aniversario":
                 return getDaysUntilAnniversary(playerData);
 
-            // Género de la pareja (si está configurado)
-            case "partner_gender":
-                return getPartnerGender(playerData);
+            // Estadísticas del servidor
+            case "server_casados":
+                return getServerMarriedCount();
+
+            case "server_comprometidos":
+                return getServerEngagedCount();
+
+            case "server_solteros":
+                return getServerSingleCount();
+
+            // CORREGIDOS: Placeholders condicionales (usan estado real)
+            case "is_single":
+                return getActualStatus(playerData) == MaritalStatus.SOLTERO ? "true" : "false";
+
+            case "is_engaged":
+                return getActualStatus(playerData) == MaritalStatus.COMPROMETIDO ? "true" : "false";
+
+            case "is_married":
+                return getActualStatus(playerData) == MaritalStatus.CASADO ? "true" : "false";
+
+            case "has_partner":
+                return hasActualPartner(playerData) ? "true" : "false";
+
+            // Placeholder de pareja online
+            case "partner_online":
+                return isPartnerOnline(playerData) ? "true" : "false";
+
+            case "partner_world":
+                return getPartnerWorld(playerData);
 
             // Estado de ceremonia
             case "ceremonia_estado":
@@ -174,41 +228,15 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
             case "invitados_count":
                 return getGuestCount(playerData);
 
-            // Lista de invitados (top 3)
+            // Lista de invitados
             case "invitados_lista":
                 return getGuestList(playerData);
 
-            // Estadísticas del servidor
-            case "server_casados":
-                return getServerMarriedCount();
+            // Género de la pareja
+            case "partner_gender":
+                return getPartnerGender(playerData);
 
-            case "server_comprometidos":
-                return getServerEngagedCount();
-
-            case "server_solteros":
-                return getServerSingleCount();
-
-            // Placeholders condicionales
-            case "is_single":
-                return playerData.getStatus() == MaritalStatus.SOLTERO ? "true" : "false";
-
-            case "is_engaged":
-                return playerData.getStatus() == MaritalStatus.COMPROMETIDO ? "true" : "false";
-
-            case "is_married":
-                return playerData.getStatus() == MaritalStatus.CASADO ? "true" : "false";
-
-            case "has_partner":
-                return playerData.hasPartner() ? "true" : "false";
-
-            // Placeholder de pareja online
-            case "partner_online":
-                return isPartnerOnline(playerData) ? "true" : "false";
-
-            case "partner_world":
-                return getPartnerWorld(playerData);
-
-            // Placeholders de compatibilidad con otros plugins
+            // Compatibilidad
             case "compatibility_status":
                 return getCompatibilityStatus(playerData);
 
@@ -218,56 +246,72 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
         }
     }
 
+    // ========================================
+    // MÉTODOS CORREGIDOS PARA OBTENER DATOS REALES
+    // ========================================
+
     /**
-     * Procesa placeholders con parámetros
+     * NUEVO MÉTODO: Obtiene el estado real del jugador
      */
-    private String processParameterizedPlaceholder(OfflinePlayer player, MarryPlayer playerData, String params) throws SQLException {
-        String[] parts = params.split("_", 2);
-
-        if (parts.length < 2) {
-            return null;
-        }
-
-        switch (parts[0].toLowerCase()) {
-            case "format":
-                // %marry_format_<tipo>% - Formatos personalizados
-                return getCustomFormat(playerData, parts[1]);
-
-            case "time":
-                // %marry_time_<formato>% - Tiempos en diferentes formatos
-                return getTimeInFormat(playerData, parts[1]);
-
-            case "date":
-                // %marry_date_<formato>% - Fechas en diferentes formatos
-                return getDateInFormat(playerData, parts[1]);
-
-            case "stats":
-                // %marry_stats_<tipo>% - Estadísticas específicas
-                return getSpecificStats(parts[1]);
-
-            default:
-                return null;
+    private MaritalStatus getActualStatus(MarryPlayer playerData) {
+        try {
+            return plugin.getDatabaseManager().getActualMaritalStatus(playerData.getUuid());
+        } catch (SQLException e) {
+            plugin.getLogger().warning("Error al obtener estado real: " + e.getMessage());
+            return playerData.getStatus();
         }
     }
 
-    // ========================================
-    // MÉTODOS DE PROCESAMIENTO
-    // ========================================
-
-    private String getStatusDisplay(MaritalStatus status) {
-        return status.getDisplayName();
-    }
-
-    private String getStatusTime(MarryPlayer playerData) {
-        if (playerData.getUpdatedAt() == null) {
-            return "0s";
+    /**
+     * NUEVO MÉTODO: Verifica si realmente tiene pareja activa
+     */
+    private boolean hasActualPartner(MarryPlayer playerData) {
+        try {
+            Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(playerData.getUuid());
+            return marriageInfo != null;
+        } catch (SQLException e) {
+            return playerData.hasPartner();
         }
-
-        long diff = System.currentTimeMillis() - playerData.getUpdatedAt().getTime();
-        return formatDuration(diff);
     }
 
-    private String getPartnerName(MarryPlayer playerData) {
+    /**
+     * MÉTODO CORREGIDO: Obtiene display del estado real
+     */
+    private String getActualStatusDisplay(MarryPlayer playerData) {
+        MaritalStatus actualStatus = getActualStatus(playerData);
+        return actualStatus.getDisplayName();
+    }
+
+    /**
+     * MÉTODO CORREGIDO: Obtiene nombre de pareja real
+     */
+    private String getActualPartnerName(MarryPlayer playerData) {
+        try {
+            Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(playerData.getUuid());
+
+            if (marriageInfo == null) {
+                return "Soltero";
+            }
+
+            String player1Uuid = (String) marriageInfo.get("player1_uuid");
+            String player2Uuid = (String) marriageInfo.get("player2_uuid");
+
+            if (playerData.getUuid().toString().equals(player1Uuid)) {
+                return (String) marriageInfo.get("player2_name");
+            } else {
+                return (String) marriageInfo.get("player1_name");
+            }
+
+        } catch (SQLException e) {
+            plugin.getLogger().warning("Error al obtener nombre de pareja: " + e.getMessage());
+            return getPartnerNameFallback(playerData);
+        }
+    }
+
+    /**
+     * MÉTODO FALLBACK: Para obtener nombre de pareja si falla el método principal
+     */
+    private String getPartnerNameFallback(MarryPlayer playerData) {
         if (!playerData.hasPartner()) {
             return "Soltero";
         }
@@ -275,26 +319,17 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
         try {
             MarryPlayer partner = plugin.getDatabaseManager().getPlayerData(playerData.getPartnerUuid());
             return partner.getUsername();
-        } catch (SQLException e) {
+        } catch (SQLException ex) {
             return "Desconocido";
         }
     }
 
-    private String getWeddingDate(MarryPlayer playerData) {
-        if (playerData.getStatus() != MaritalStatus.CASADO || !playerData.hasPartner()) {
-            return "Sin fecha";
-        }
-
+    /**
+     * MÉTODO CORREGIDO: Obtiene fecha de matrimonio real
+     */
+    private String getActualWeddingDate(MarryPlayer playerData) {
         try {
-            int marriageId = plugin.getDatabaseManager().getMarriageId(
-                    playerData.getUuid(), playerData.getPartnerUuid());
-
-            if (marriageId == -1) {
-                return "Sin fecha";
-            }
-
-            // Usar el nuevo método del DatabaseManager
-            Timestamp weddingDate = plugin.getDatabaseManager().getWeddingDateByMarriageId(marriageId);
+            Timestamp weddingDate = plugin.getDatabaseManager().getActualWeddingDate(playerData.getUuid());
 
             if (weddingDate == null) {
                 return "Sin fecha";
@@ -303,60 +338,42 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
             return formatDate(weddingDate.toLocalDateTime().toLocalDate());
 
         } catch (SQLException e) {
+            plugin.getLogger().warning("Error al obtener fecha de matrimonio: " + e.getMessage());
             return "Error";
         }
     }
 
-    private String getEngagementDate(MarryPlayer playerData) {
-        if (playerData.getStatus() == MaritalStatus.SOLTERO) {
-            return "Sin fecha";
-        }
-
+    /**
+     * MÉTODO CORREGIDO: Obtiene fecha de compromiso real
+     */
+    private String getActualEngagementDate(MarryPlayer playerData) {
         try {
-            int marriageId = plugin.getDatabaseManager().getMarriageId(
-                    playerData.getUuid(), playerData.getPartnerUuid());
+            Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(playerData.getUuid());
 
-            if (marriageId == -1) {
-                return formatDate(playerData.getUpdatedAt().toLocalDateTime().toLocalDate());
+            if (marriageInfo == null) {
+                return "Sin fecha";
             }
 
-            // Usar el nuevo método del DatabaseManager
-            Timestamp engagementDate = plugin.getDatabaseManager().getEngagementDateByMarriageId(marriageId);
+            Timestamp engagementDate = (Timestamp) marriageInfo.get("engagement_date");
 
             if (engagementDate == null) {
-                return formatDate(playerData.getUpdatedAt().toLocalDateTime().toLocalDate());
+                return "Sin fecha";
             }
 
             return formatDate(engagementDate.toLocalDateTime().toLocalDate());
 
         } catch (SQLException e) {
+            plugin.getLogger().warning("Error al obtener fecha de compromiso: " + e.getMessage());
             return "Error";
         }
     }
 
-    private String getStatusWithEmoji(MaritalStatus status) {
-        switch (status) {
-            case SOLTERO:
-                return "💔 Soltero/a";
-            case COMPROMETIDO:
-                return "💍 Comprometido/a";
-            case CASADO:
-                return "💖 Casado/a";
-            default:
-                return status.getDisplayName();
-        }
-    }
-
-    private String getDaysMarried(MarryPlayer playerData) {
-        if (playerData.getStatus() != MaritalStatus.CASADO) {
-            return "0";
-        }
-
+    /**
+     * MÉTODO CORREGIDO: Obtiene días casado real
+     */
+    private String getActualDaysMarried(MarryPlayer playerData) {
         try {
-            int marriageId = plugin.getDatabaseManager().getMarriageId(
-                    playerData.getUuid(), playerData.getPartnerUuid());
-
-            Timestamp weddingDate = plugin.getDatabaseManager().getWeddingDateByMarriageId(marriageId);
+            Timestamp weddingDate = plugin.getDatabaseManager().getActualWeddingDate(playerData.getUuid());
 
             if (weddingDate == null) {
                 return "0";
@@ -370,7 +387,34 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
             return String.valueOf(Math.max(0, days));
 
         } catch (SQLException e) {
+            plugin.getLogger().warning("Error al calcular días casado: " + e.getMessage());
             return "0";
+        }
+    }
+
+    // ========================================
+    // MÉTODOS ORIGINALES MANTENIDOS
+    // ========================================
+
+    private String getStatusTime(MarryPlayer playerData) {
+        if (playerData.getUpdatedAt() == null) {
+            return "0s";
+        }
+
+        long diff = System.currentTimeMillis() - playerData.getUpdatedAt().getTime();
+        return formatDuration(diff);
+    }
+
+    private String getStatusWithEmoji(MaritalStatus status) {
+        switch (status) {
+            case SOLTERO:
+                return "💔 Soltero/a";
+            case COMPROMETIDO:
+                return "💍 Comprometido/a";
+            case CASADO:
+                return "💖 Casado/a";
+            default:
+                return status.getDisplayName();
         }
     }
 
@@ -404,16 +448,17 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
     private String getCompleteStatus(MarryPlayer playerData) {
         StringBuilder status = new StringBuilder();
 
-        status.append(getStatusWithEmoji(playerData.getStatus()));
+        status.append(getStatusWithEmoji(getActualStatus(playerData)));
 
-        if (playerData.hasPartner()) {
-            String partnerName = getPartnerName(playerData);
+        if (hasActualPartner(playerData)) {
+            String partnerName = getActualPartnerName(playerData);
             status.append(" con ").append(partnerName);
 
-            if (playerData.getStatus() == MaritalStatus.CASADO) {
-                String days = getDaysMarried(playerData);
+            MaritalStatus actualStatus = getActualStatus(playerData);
+            if (actualStatus == MaritalStatus.CASADO) {
+                String days = getActualDaysMarried(playerData);
                 status.append(" (").append(days).append(" días casados)");
-            } else if (playerData.getStatus() == MaritalStatus.COMPROMETIDO) {
+            } else if (actualStatus == MaritalStatus.COMPROMETIDO) {
                 String days = getDaysEngaged(playerData);
                 status.append(" (").append(days).append(" días comprometidos)");
             }
@@ -423,15 +468,8 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
     }
 
     private String getNextAnniversary(MarryPlayer playerData) {
-        if (playerData.getStatus() != MaritalStatus.CASADO) {
-            return "N/A";
-        }
-
         try {
-            int marriageId = plugin.getDatabaseManager().getMarriageId(
-                    playerData.getUuid(), playerData.getPartnerUuid());
-
-            Timestamp weddingDate = plugin.getDatabaseManager().getWeddingDateByMarriageId(marriageId);
+            Timestamp weddingDate = plugin.getDatabaseManager().getActualWeddingDate(playerData.getUuid());
 
             if (weddingDate == null) {
                 return "N/A";
@@ -453,15 +491,8 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
     }
 
     private String getDaysUntilAnniversary(MarryPlayer playerData) {
-        if (playerData.getStatus() != MaritalStatus.CASADO) {
-            return "N/A";
-        }
-
         try {
-            int marriageId = plugin.getDatabaseManager().getMarriageId(
-                    playerData.getUuid(), playerData.getPartnerUuid());
-
-            Timestamp weddingDate = plugin.getDatabaseManager().getWeddingDateByMarriageId(marriageId);
+            Timestamp weddingDate = plugin.getDatabaseManager().getActualWeddingDate(playerData.getUuid());
 
             if (weddingDate == null) {
                 return "N/A";
@@ -483,259 +514,340 @@ public class MarryCorePlaceholderExpansion extends PlaceholderExpansion {
         }
     }
 
-    private String getPartnerGender(MarryPlayer playerData) {
-        // Esta función requerirá implementación adicional
-        // según cómo quieras manejar el género de los jugadores
-        return "N/A";
-    }
-
-private String getCeremonyStatus(MarryPlayer playerData) {
-    if (playerData.getStatus() != MaritalStatus.COMPROMETIDO) {
-        return "N/A";
-    }
-
-    try {
-        int marriageId = plugin.getDatabaseManager().getMarriageId(
-                playerData.getUuid(), playerData.getPartnerUuid());
-
-        if (marriageId == -1) {
-            return "Sin programar";
+    private String getCeremonyStatus(MarryPlayer playerData) {
+        if (getActualStatus(playerData) != MaritalStatus.COMPROMETIDO) {
+            return "N/A";
         }
 
-        // Verificar si hay fecha programada
-        Timestamp ceremonyDate = getCeremonyDateFromDB(marriageId);
+        try {
+            Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(playerData.getUuid());
 
-        if (ceremonyDate == null) {
-            return "Sin programar";
+            if (marriageInfo == null) {
+                return "Sin programar";
+            }
+
+            // Verificar si hay fecha programada
+            Timestamp ceremonyDate = (Timestamp) marriageInfo.get("wedding_date");
+
+            if (ceremonyDate == null) {
+                return "Sin programar";
+            }
+
+            LocalDateTime ceremony = ceremonyDate.toLocalDateTime();
+            LocalDateTime now = LocalDateTime.now();
+
+            if (ceremony.isBefore(now)) {
+                return "Vencida";
+            } else {
+                return "Programada";
+            }
+
+        } catch (SQLException e) {
+            return "Error";
+        }
+    }
+
+    private String getScheduledCeremonyDate(MarryPlayer playerData) {
+        if (getActualStatus(playerData) != MaritalStatus.COMPROMETIDO) {
+            return "N/A";
         }
 
-        LocalDateTime ceremony = ceremonyDate.toLocalDateTime();
-        LocalDateTime now = LocalDateTime.now();
+        try {
+            Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(playerData.getUuid());
 
-        if (ceremony.isBefore(now)) {
-            return "Vencida";
-        } else {
-            return "Programada";
+            if (marriageInfo == null) {
+                return "Sin fecha";
+            }
+
+            Timestamp ceremonyDate = (Timestamp) marriageInfo.get("wedding_date");
+
+            if (ceremonyDate == null) {
+                return "Sin fecha";
+            }
+
+            return formatDateTime(ceremonyDate.toLocalDateTime());
+
+        } catch (SQLException e) {
+            return "Error";
         }
-
-    } catch (SQLException e) {
-        return "Error";
-    }
-}
-
-private String getScheduledCeremonyDate(MarryPlayer playerData) {
-    if (playerData.getStatus() != MaritalStatus.COMPROMETIDO) {
-        return "N/A";
     }
 
-    try {
-        int marriageId = plugin.getDatabaseManager().getMarriageId(
-                playerData.getUuid(), playerData.getPartnerUuid());
+    private String getCeremonyLocation(MarryPlayer playerData) {
+        try {
+            Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(playerData.getUuid());
 
-        Timestamp ceremonyDate = getCeremonyDateFromDB(marriageId);
+            if (marriageInfo == null) {
+                return "Sin ubicación";
+            }
 
-        if (ceremonyDate == null) {
-            return "Sin fecha";
+            String location = (String) marriageInfo.get("ceremony_location");
+            return location != null ? location : "Sin ubicación";
+
+        } catch (SQLException e) {
+            return "Sin ubicación";
         }
-
-        return formatDateTime(ceremonyDate.toLocalDateTime());
-
-    } catch (SQLException e) {
-        return "Error";
-    }
-}
-
-private String getCeremonyLocation(MarryPlayer playerData) {
-    // Implementar obtención de ubicación de ceremonia
-    return "Sin ubicación";
-}
-
-private String getGuestCount(MarryPlayer playerData) {
-    if (playerData.getStatus() != MaritalStatus.COMPROMETIDO) {
-        return "0";
     }
 
-    try {
-        int marriageId = plugin.getDatabaseManager().getMarriageId(
-                playerData.getUuid(), playerData.getPartnerUuid());
-
-        if (marriageId == -1) {
+    private String getGuestCount(MarryPlayer playerData) {
+        if (getActualStatus(playerData) != MaritalStatus.COMPROMETIDO) {
             return "0";
         }
 
-        int count = plugin.getDatabaseManager().getConfirmedGuestsCount(marriageId);
-        return String.valueOf(count);
+        try {
+            Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(playerData.getUuid());
 
-    } catch (SQLException e) {
-        return "0";
-    }
-}
-
-private String getGuestList(MarryPlayer playerData) {
-    // Implementar lista de invitados
-    return "Sin invitados";
-}
-
-private String getServerMarriedCount() {
-    try {
-        int[] stats = plugin.getDatabaseManager().getSystemStats();
-        return String.valueOf(stats[3]); // casados
-    } catch (SQLException e) {
-        return "0";
-    }
-}
-
-private String getServerEngagedCount() {
-    try {
-        int[] stats = plugin.getDatabaseManager().getSystemStats();
-        return String.valueOf(stats[2]); // comprometidos
-    } catch (SQLException e) {
-        return "0";
-    }
-}
-
-private String getServerSingleCount() {
-    try {
-        int[] stats = plugin.getDatabaseManager().getSystemStats();
-        return String.valueOf(stats[1]); // solteros
-    } catch (SQLException e) {
-        return "0";
-    }
-}
-
-private boolean isPartnerOnline(MarryPlayer playerData) {
-    if (!playerData.hasPartner()) {
-        return false;
-    }
-
-    Player partner = Bukkit.getPlayer(playerData.getPartnerUuid());
-    return partner != null && partner.isOnline();
-}
-
-private String getPartnerWorld(MarryPlayer playerData) {
-    if (!playerData.hasPartner()) {
-        return "N/A";
-    }
-
-    Player partner = Bukkit.getPlayer(playerData.getPartnerUuid());
-    if (partner == null) {
-        return "Offline";
-    }
-
-    return partner.getWorld().getName();
-}
-
-private String getCompatibilityStatus(MarryPlayer playerData) {
-    // Implementar sistema de compatibilidad si es necesario
-    return "Compatible";
-}
-
-// ========================================
-// MÉTODOS CON PARÁMETROS
-// ========================================
-
-private String getCustomFormat(MarryPlayer playerData, String formatType) {
-    switch (formatType.toLowerCase()) {
-        case "short":
-            return getStatusDisplay(playerData.getStatus()).substring(0, 1);
-        case "color":
-            return getColoredStatus(playerData.getStatus());
-        case "bracket":
-            return "[" + getStatusDisplay(playerData.getStatus()) + "]";
-        default:
-            return getStatusDisplay(playerData.getStatus());
-    }
-}
-
-private String getTimeInFormat(MarryPlayer playerData, String format) {
-    if (playerData.getUpdatedAt() == null) {
-        return "0";
-    }
-
-    long diff = System.currentTimeMillis() - playerData.getUpdatedAt().getTime();
-
-    switch (format.toLowerCase()) {
-        case "seconds":
-            return String.valueOf(TimeUnit.MILLISECONDS.toSeconds(diff));
-        case "minutes":
-            return String.valueOf(TimeUnit.MILLISECONDS.toMinutes(diff));
-        case "hours":
-            return String.valueOf(TimeUnit.MILLISECONDS.toHours(diff));
-        case "days":
-            return String.valueOf(TimeUnit.MILLISECONDS.toDays(diff));
-        case "detailed":
-            return formatDuration(diff);
-        default:
-            return formatDuration(diff);
-    }
-}
-
-private String getDateInFormat(MarryPlayer playerData, String format) {
-    if (playerData.getUpdatedAt() == null) {
-        return "N/A";
-    }
-
-    LocalDate date = playerData.getUpdatedAt().toLocalDateTime().toLocalDate();
-
-    switch (format.toLowerCase()) {
-        case "short":
-            return date.format(DateTimeFormatter.ofPattern("dd/MM/yy"));
-        case "long":
-            return date.format(DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy"));
-        case "iso":
-            return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
-        default:
-            return formatDate(date);
-    }
-}
-
-private String getSpecificStats(String statType) {
-    try {
-        int[] stats = plugin.getDatabaseManager().getSystemStats();
-
-        switch (statType.toLowerCase()) {
-            case "total":
-                return String.valueOf(stats[0]);
-            case "single":
-                return String.valueOf(stats[1]);
-            case "engaged":
-                return String.valueOf(stats[2]);
-            case "married":
-                return String.valueOf(stats[3]);
-            case "percentage_married":
-                if (stats[0] > 0) {
-                    double percentage = (stats[3] * 100.0) / stats[0];
-                    return String.format("%.1f%%", percentage);
-                }
-                return "0%";
-            default:
+            if (marriageInfo == null) {
                 return "0";
+            }
+
+            int marriageId = (int) marriageInfo.get("id");
+            int count = plugin.getDatabaseManager().getConfirmedGuestsCount(marriageId);
+            return String.valueOf(count);
+
+        } catch (SQLException e) {
+            return "0";
         }
-    } catch (SQLException e) {
-        return "Error";
     }
-}
+
+    private String getGuestList(MarryPlayer playerData) {
+        // Implementar lista de invitados si es necesario
+        return "Sin invitados";
+    }
+
+    private String getServerMarriedCount() {
+        try {
+            int[] stats = plugin.getDatabaseManager().getSystemStats();
+            return String.valueOf(stats[3]); // casados
+        } catch (SQLException e) {
+            return "0";
+        }
+    }
+
+    private String getServerEngagedCount() {
+        try {
+            int[] stats = plugin.getDatabaseManager().getSystemStats();
+            return String.valueOf(stats[2]); // comprometidos
+        } catch (SQLException e) {
+            return "0";
+        }
+    }
+
+    private String getServerSingleCount() {
+        try {
+            int[] stats = plugin.getDatabaseManager().getSystemStats();
+            return String.valueOf(stats[1]); // solteros
+        } catch (SQLException e) {
+            return "0";
+        }
+    }
+
+    private boolean isPartnerOnline(MarryPlayer playerData) {
+        if (!hasActualPartner(playerData)) {
+            return false;
+        }
+
+        try {
+            Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(playerData.getUuid());
+
+            if (marriageInfo == null) {
+                return false;
+            }
+
+            String player1Uuid = (String) marriageInfo.get("player1_uuid");
+            String player2Uuid = (String) marriageInfo.get("player2_uuid");
+
+            UUID partnerUuid;
+            if (playerData.getUuid().toString().equals(player1Uuid)) {
+                partnerUuid = UUID.fromString(player2Uuid);
+            } else {
+                partnerUuid = UUID.fromString(player1Uuid);
+            }
+
+            Player partner = Bukkit.getPlayer(partnerUuid);
+            return partner != null && partner.isOnline();
+
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private String getPartnerWorld(MarryPlayer playerData) {
+        if (!hasActualPartner(playerData)) {
+            return "N/A";
+        }
+
+        try {
+            Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(playerData.getUuid());
+
+            if (marriageInfo == null) {
+                return "Offline";
+            }
+
+            String player1Uuid = (String) marriageInfo.get("player1_uuid");
+            String player2Uuid = (String) marriageInfo.get("player2_uuid");
+
+            UUID partnerUuid;
+            if (playerData.getUuid().toString().equals(player1Uuid)) {
+                partnerUuid = UUID.fromString(player2Uuid);
+            } else {
+                partnerUuid = UUID.fromString(player1Uuid);
+            }
+
+            Player partner = Bukkit.getPlayer(partnerUuid);
+            if (partner == null) {
+                return "Offline";
+            }
+
+            return partner.getWorld().getName();
+
+        } catch (SQLException e) {
+            return "Error";
+        }
+    }
+
+    private String getPartnerGender(MarryPlayer playerData) {
+        // Esta función requiere implementación adicional
+        return "N/A";
+    }
+
+    private String getCompatibilityStatus(MarryPlayer playerData) {
+        // Implementar sistema de compatibilidad si es necesario
+        return "Compatible";
+    }
+
+    // ========================================
+    // MÉTODOS CON PARÁMETROS
+    // ========================================
+
+    private String processParameterizedPlaceholder(OfflinePlayer player, MarryPlayer playerData, String params) throws SQLException {
+        String[] parts = params.split("_", 2);
+
+        if (parts.length < 2) {
+            return null;
+        }
+
+        switch (parts[0].toLowerCase()) {
+            case "format":
+                return getCustomFormat(playerData, parts[1]);
+
+            case "time":
+                return getTimeInFormat(playerData, parts[1]);
+
+            case "date":
+                return getDateInFormat(playerData, parts[1]);
+
+            case "stats":
+                return getSpecificStats(parts[1]);
+
+            default:
+                return null;
+        }
+    }
+
+    private String getCustomFormat(MarryPlayer playerData, String formatType) {
+        MaritalStatus actualStatus = getActualStatus(playerData);
+
+        switch (formatType.toLowerCase()) {
+            case "short":
+                return actualStatus.getDisplayName().substring(0, 1);
+            case "color":
+                return getColoredStatus(actualStatus);
+            case "bracket":
+                return "[" + actualStatus.getDisplayName() + "]";
+            default:
+                return actualStatus.getDisplayName();
+        }
+    }
+
+    private String getTimeInFormat(MarryPlayer playerData, String format) {
+        if (playerData.getUpdatedAt() == null) {
+            return "0";
+        }
+
+        long diff = System.currentTimeMillis() - playerData.getUpdatedAt().getTime();
+
+        switch (format.toLowerCase()) {
+            case "seconds":
+                return String.valueOf(TimeUnit.MILLISECONDS.toSeconds(diff));
+            case "minutes":
+                return String.valueOf(TimeUnit.MILLISECONDS.toMinutes(diff));
+            case "hours":
+                return String.valueOf(TimeUnit.MILLISECONDS.toHours(diff));
+            case "days":
+                return String.valueOf(TimeUnit.MILLISECONDS.toDays(diff));
+            case "detailed":
+                return formatDuration(diff);
+            default:
+                return formatDuration(diff);
+        }
+    }
+
+    private String getDateInFormat(MarryPlayer playerData, String format) {
+        if (playerData.getUpdatedAt() == null) {
+            return "N/A";
+        }
+
+        LocalDate date = playerData.getUpdatedAt().toLocalDateTime().toLocalDate();
+
+        switch (format.toLowerCase()) {
+            case "short":
+                return date.format(DateTimeFormatter.ofPattern("dd/MM/yy"));
+            case "long":
+                return date.format(DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy"));
+            case "iso":
+                return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+            default:
+                return formatDate(date);
+        }
+    }
+
+    private String getSpecificStats(String statType) {
+        try {
+            int[] stats = plugin.getDatabaseManager().getSystemStats();
+
+            switch (statType.toLowerCase()) {
+                case "total":
+                    return String.valueOf(stats[0]);
+                case "single":
+                    return String.valueOf(stats[1]);
+                case "engaged":
+                    return String.valueOf(stats[2]);
+                case "married":
+                    return String.valueOf(stats[3]);
+                case "percentage_married":
+                    if (stats[0] > 0) {
+                        double percentage = (stats[3] * 100.0) / stats[0];
+                        return String.format("%.1f%%", percentage);
+                    }
+                    return "0%";
+                default:
+                    return "0";
+            }
+        } catch (SQLException e) {
+            return "Error";
+        }
+    }
 
 // ========================================
 // MÉTODOS AUXILIARES
 // ========================================
 
-private String formatDuration(long milliseconds) {
-    long days = TimeUnit.MILLISECONDS.toDays(milliseconds);
-    long hours = TimeUnit.MILLISECONDS.toHours(milliseconds) % 24;
-    long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds) % 60;
-    long seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds) % 60;
+    private String formatDuration(long milliseconds) {
+        long days = TimeUnit.MILLISECONDS.toDays(milliseconds);
+        long hours = TimeUnit.MILLISECONDS.toHours(milliseconds) % 24;
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds) % 60;
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds) % 60;
 
-    StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
 
-    if (days > 0) {
-        sb.append(days).append("d ");
-    }
-    if (hours > 0) {
-        sb.append(hours).append("h ");
-    }
-    if (minutes > 0) {
-        sb.append(minutes).append("m ");
+        if (days > 0) {
+            sb.append(days).append("d ");
+        }
+        if (hours > 0) {
+            sb.append(hours).append("h ");
+        }
+        if (minutes > 0) {
+            sb.append(minutes).append("m ");
     }
     if (seconds > 0 || sb.length() == 0) {
         sb.append(seconds).append("s");

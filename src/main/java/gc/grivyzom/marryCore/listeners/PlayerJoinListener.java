@@ -13,11 +13,12 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.sql.SQLException;
+import java.util.UUID;
 
 /**
  * Listener para manejar eventos de entrada y salida de jugadores.
  * Se encarga de actualizar información en la base de datos y limpiar datos temporales.
- * Ahora incluye notificaciones de conexión/desconexión entre parejas.
+ * ACTUALIZADO: Incluye limpieza de cooldowns de besos y sincronización de estados.
  *
  * @author Brocolitx
  * @version 0.0.1
@@ -43,7 +44,10 @@ public class PlayerJoinListener implements Listener {
                 // Actualizar nombre de usuario si ha cambiado
                 plugin.getDatabaseManager().updatePlayerUsername(player.getUniqueId(), player.getName());
 
-                // NUEVA FUNCIONALIDAD: Notificar a la pareja que se conectó
+                // NUEVO: Sincronizar estado del jugador con la base de datos
+                plugin.getDatabaseManager().synchronizePlayerStatus(player.getUniqueId());
+
+                // FUNCIONALIDAD EXISTENTE: Notificar a la pareja que se conectó
                 MarryPlayer mpJoin = plugin.getDatabaseManager().getPlayerData(player.getUniqueId());
                 if ((mpJoin.getStatus() == MaritalStatus.CASADO || mpJoin.getStatus() == MaritalStatus.COMPROMETIDO)
                         && mpJoin.getPartnerUuid() != null) {
@@ -58,7 +62,7 @@ public class PlayerJoinListener implements Listener {
 
                 // Log de debug si está habilitado
                 if (plugin.getConfig().getBoolean("general.debug", false)) {
-                    plugin.getLogger().info("Datos actualizados para " + player.getName() + " (" + player.getUniqueId() + ")");
+                    plugin.getLogger().info("Datos actualizados y sincronizados para " + player.getName() + " (" + player.getUniqueId() + ")");
                 }
 
             } catch (SQLException e) {
@@ -71,7 +75,7 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
-        // NUEVA FUNCIONALIDAD: Notificar a la pareja que se desconectó
+        // FUNCIONALIDAD EXISTENTE: Notificar a la pareja que se desconectó
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 MarryPlayer mpQuit = plugin.getDatabaseManager().getPlayerData(player.getUniqueId());
@@ -90,12 +94,43 @@ public class PlayerJoinListener implements Listener {
             }
         });
 
-        // Limpiar propuestas pendientes del jugador que se desconecta
-        MarryCommand.cleanupProposal(player.getUniqueId());
+        // LIMPIEZA EXPANDIDA: Limpiar todos los datos temporales
+        cleanupPlayerData(player);
 
         // Log de debug si está habilitado
         if (plugin.getConfig().getBoolean("general.debug", false)) {
-            plugin.getLogger().info("Limpieza de datos temporales para " + player.getName());
+            plugin.getLogger().info("Limpieza completa de datos temporales para " + player.getName());
         }
+    }
+
+    /**
+     * NUEVO MÉTODO: Limpia todos los datos temporales de un jugador
+     */
+    private void cleanupPlayerData(Player player) {
+        UUID playerUuid = player.getUniqueId();
+
+        // Limpiar propuestas pendientes
+        MarryCommand.cleanupProposal(playerUuid);
+
+        // NUEVO: Limpiar cooldowns de besos
+        KissListener.cleanupKissCooldown(playerUuid);
+
+        // Limpiar confirmaciones de divorcio
+        try {
+            // Importar y usar el método de limpieza de DivorceCommand
+            gc.grivyzom.marryCore.commands.DivorceCommand.cleanupConfirmation(playerUuid);
+        } catch (Exception e) {
+            // Si no existe el método, continuar
+        }
+
+        // Limpiar cooldowns de teletransporte
+        try {
+            // Importar y usar el método de limpieza de SpouseTeleportCommand
+            gc.grivyzom.marryCore.commands.SpouseTeleportCommand.cleanupCooldown(playerUuid);
+        } catch (Exception e) {
+            // Si no existe el método, continuar
+        }
+
+        plugin.getLogger().info("Datos temporales limpiados para: " + player.getName());
     }
 }
