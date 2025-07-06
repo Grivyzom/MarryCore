@@ -5,7 +5,7 @@ api-version: '1.20'
 authors: [ Brocolitx ]
 website: www.grivyzom.com
 description: Sistema completo de matrimonio para servidores de Minecraft Survival
-softdepend: [PlaceholderAPI, LuckPerms]
+softdepend: [PlaceholderAPI, LuckPerms, Vault, WorldGuard]
 
 commands:
   marry:
@@ -15,22 +15,53 @@ commands:
     permission: marrycore.marry
     permission-message: §cNo tienes permisos para usar este comando.
 
+  aceptar:
+    description: Aceptar propuesta de matrimonio
+    aliases: [accept, si, yes]
+    usage: /aceptar - Aceptar propuesta de matrimonio pendiente
+    permission: marrycore.marry
+    permission-message: §cNo tienes permisos para usar este comando.
+
+  rechazar:
+    description: Rechazar propuesta de matrimonio
+    aliases: [reject, no]
+    usage: /rechazar - Rechazar propuesta de matrimonio pendiente
+    permission: marrycore.marry
+    permission-message: §cNo tienes permisos para usar este comando.
+
   casamiento:
     description: Programar fecha de casamiento
+    aliases: [boda, wedding]
     usage: /casamiento <fecha> [hora] - Programar ceremonia de matrimonio
     permission: marrycore.wedding
     permission-message: §cNo tienes permisos para usar este comando.
 
   invitados:
     description: Gestionar invitados para la ceremonia
+    aliases: [guests, invitar]
     usage: /invitados <add|remove|list> [jugador] - Gestionar lista de invitados
     permission: marrycore.guests
     permission-message: §cNo tienes permisos para usar este comando.
 
   divorcio:
     description: Divorciarse de la pareja actual
+    aliases: [divorce, separarse]
     usage: /divorcio - Divorciarse de la pareja actual
     permission: marrycore.divorce
+    permission-message: §cNo tienes permisos para usar este comando.
+
+  conyuge:
+    description: Teletransportarse al cónyuge
+    aliases: [spouse, tp, pareja]
+    usage: /conyuge - Teletransportarse al cónyuge
+    permission: marrycore.teleport
+    permission-message: §cNo tienes permisos para usar este comando.
+
+  marrycore:
+    description: Comandos administrativos del sistema de matrimonio
+    aliases: [mc, marrycoreadmin]
+    usage: /marrycore <subcomando> - Administración del plugin
+    permission: marrycore.admin
     permission-message: §cNo tienes permisos para usar este comando.
 
 permissions:
@@ -42,24 +73,9 @@ permissions:
       marrycore.wedding: true
       marrycore.guests: true
       marrycore.divorce: true
+      marrycore.teleport: true
       marrycore.admin: true
+      marrycore.bypass: true
 
   marrycore.marry:
-    description: Permite proponer matrimonio
-    default: true
-
-  marrycore.wedding:
-    description: Permite programar ceremonias de matrimonio
-    default: true
-
-  marrycore.guests:
-    description: Permite gestionar invitados
-    default: true
-
-  marrycore.divorce:
-    description: Permite divorciarse
-    default: true
-
-  marrycore.admin:
-    description: Comandos administrativos del sistema de matrimonio
-    default: op
+    description: Permite proponer matrimonio y aceptar/rechazar propuestas

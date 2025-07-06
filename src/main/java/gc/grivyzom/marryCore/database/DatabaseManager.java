@@ -224,6 +224,52 @@ public class DatabaseManager {
             // Actualizar registro de matrimonio
             String marriageQuery = """
                 UPDATE marry_marriages 
+                SET status = 'casado', wedding_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+                WHERE (player1_uuid = ? AND player2_uuid = ?) OR (player1_uuid = ? AND player2_uuid = ?) 
+                AND status = 'comprometido'
+            """;
+
+            try (PreparedStatement stmt = conn.prepareStatement(marriageQuery)) {
+                stmt.setString(1, player1Uuid.toString());
+                stmt.setString(2, player2Uuid.toString());
+                stmt.setString(3, player2Uuid.toString());
+                stmt.setString(4, player1Uuid.toString());
+                stmt.executeUpdate();
+            }
+
+            conn.commit(); // Confirmar transacción
+
+        } catch (SQLException e) {
+            conn.rollback(); // Revertir en caso de error
+            throw e;
+        } finally {
+            conn.setAutoCommit(true); // Restaurar auto-commit
+        }
+    }
+
+    /**
+     * Procesa un divorcio entre dos jugadores
+     * @param player1Uuid UUID del primer jugador
+     * @param player2Uuid UUID del segundo jugador
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public void createDivorce(UUID player1Uuid, UUID player2Uuid) throws SQLException {
+        Connection conn = getConnection();
+
+        try {
+            conn.setAutoCommit(false); // Iniciar transacción
+
+            // Actualizar estado de ambos jugadores a soltero
+            updatePlayerStatus(player1Uuid, MaritalStatus.SOLTERO);
+            updatePlayerStatus(player2Uuid, MaritalStatus.SOLTERO);
+
+            // Remover parejas
+            updatePlayerPartner(player1Uuid, null);
+            updatePlayerPartner(player2Uuid, null);
+
+            // Actualizar registro de matrimonio
+            String marriageQuery = """
+                UPDATE marry_marriages 
                 SET status = 'divorciado', divorce_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
                 WHERE (player1_uuid = ? AND player2_uuid = ?) OR (player1_uuid = ? AND player2_uuid = ?) 
                 AND status IN ('comprometido', 'casado')
@@ -525,50 +571,4 @@ public class DatabaseManager {
 
         return repairedCount;
     }
-} status = 'casado', wedding_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-WHERE (player1_uuid = ? AND player2_uuid = ?) OR (player1_uuid = ? AND player2_uuid = ?)
-AND status = 'comprometido'
-            """;
-
-            try (PreparedStatement stmt = conn.prepareStatement(marriageQuery)) {
-                stmt.setString(1, player1Uuid.toString());
-                stmt.setString(2, player2Uuid.toString());
-                stmt.setString(3, player2Uuid.toString());
-                stmt.setString(4, player1Uuid.toString());
-                stmt.executeUpdate();
-            }
-
-            conn.commit(); // Confirmar transacción
-
-        } catch (SQLException e) {
-            conn.rollback(); // Revertir en caso de error
-            throw e;
-        } finally {
-            conn.setAutoCommit(true); // Restaurar auto-commit
-        }
-    }
-
-    /**
-     * Procesa un divorcio entre dos jugadores
-     * @param player1Uuid UUID del primer jugador
-     * @param player2Uuid UUID del segundo jugador
-     * @throws SQLException Si hay error en la base de datos
-     */
-    public void createDivorce(UUID player1Uuid, UUID player2Uuid) throws SQLException {
-        Connection conn = getConnection();
-
-        try {
-            conn.setAutoCommit(false); // Iniciar transacción
-
-            // Actualizar estado de ambos jugadores a soltero
-            updatePlayerStatus(player1Uuid, MaritalStatus.SOLTERO);
-            updatePlayerStatus(player2Uuid, MaritalStatus.SOLTERO);
-
-            // Remover parejas
-            updatePlayerPartner(player1Uuid, null);
-            updatePlayerPartner(player2Uuid, null);
-
-            // Actualizar registro de matrimonio
-            String marriageQuery = """
-UPDATE marry_marriages
-SET
+}

@@ -1,5 +1,9 @@
 package gc.grivyzom.marryCore;
 
+import gc.grivyzom.marryCore.commands.*;
+import gc.grivyzom.marryCore.database.DatabaseManager;
+import gc.grivyzom.marryCore.listeners.*;
+import gc.grivyzom.marryCore.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -16,6 +20,8 @@ public final class MarryCore extends JavaPlugin {
 
     private FileConfiguration databaseConfig;
     private Connection connection;
+    private DatabaseManager databaseManager;
+    private MessageUtils messageUtils;
 
     @Override
     public void onEnable() {
@@ -26,8 +32,13 @@ public final class MarryCore extends JavaPlugin {
         getLogger().info(ChatColor.GREEN + "  Website: www.grivyzom.com");
         getLogger().info(ChatColor.GREEN + "=================================");
 
-        // Crear archivos de configuración
+        // Crear configuraciones
+        saveDefaultConfig();
         createDatabaseConfig();
+
+        // Crear archivos de recursos
+        saveResource("messages.yml", false);
+        saveResource("items.yml", false);
 
         // Cargar configuración de base de datos
         loadDatabaseConfig();
@@ -37,6 +48,18 @@ public final class MarryCore extends JavaPlugin {
 
         // Crear tablas si no existen
         createTables();
+
+        // Inicializar managers
+        initializeManagers();
+
+        // Registrar comandos
+        registerCommands();
+
+        // Registrar listeners
+        registerListeners();
+
+        // Tareas programadas
+        scheduleRepeatingTasks();
 
         getLogger().info(ChatColor.GREEN + "¡MarryCore ha sido habilitado correctamente!");
     }
@@ -147,7 +170,8 @@ public final class MarryCore extends JavaPlugin {
                     partner_uuid VARCHAR(36) DEFAULT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    FOREIGN KEY (partner_uuid) REFERENCES marry_players(uuid) ON DELETE SET NULL
+                    INDEX idx_partner (partner_uuid),
+                    INDEX idx_status (status)
                 )
             """;
 
@@ -164,8 +188,9 @@ public final class MarryCore extends JavaPlugin {
                     divorce_date TIMESTAMP NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    FOREIGN KEY (player1_uuid) REFERENCES marry_players(uuid) ON DELETE CASCADE,
-                    FOREIGN KEY (player2_uuid) REFERENCES marry_players(uuid) ON DELETE CASCADE
+                    INDEX idx_players (player1_uuid, player2_uuid),
+                    INDEX idx_status (status),
+                    INDEX idx_wedding_date (wedding_date)
                 )
             """;
 
@@ -179,8 +204,8 @@ public final class MarryCore extends JavaPlugin {
                     status ENUM('invitado', 'confirmado', 'rechazado') DEFAULT 'invitado',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (marriage_id) REFERENCES marry_marriages(id) ON DELETE CASCADE,
-                    FOREIGN KEY (guest_uuid) REFERENCES marry_players(uuid) ON DELETE CASCADE,
-                    FOREIGN KEY (invited_by) REFERENCES marry_players(uuid) ON DELETE CASCADE
+                    INDEX idx_marriage (marriage_id),
+                    INDEX idx_guest (guest_uuid)
                 )
             """;
 
@@ -196,13 +221,85 @@ public final class MarryCore extends JavaPlugin {
         }
     }
 
-    // Getter para la conexión (para uso en otras clases)
+    private void initializeManagers() {
+        this.databaseManager = new DatabaseManager(this);
+        this.messageUtils = new MessageUtils(this);
+    }
+
+    private void registerCommands() {
+        // Registrar comando principal de matrimonio
+        getCommand("marry").setExecutor(new MarryCommand(this));
+
+        // Registrar comando de aceptar/rechazar
+        getCommand("aceptar").setExecutor(new AcceptCommand(this));
+        getCommand("rechazar").setExecutor(new RejectCommand(this));
+
+        // Registrar comando de casamiento
+        getCommand("casamiento").setExecutor(new WeddingCommand(this));
+
+        // Registrar comando de invitados
+        getCommand("invitados").setExecutor(new GuestsCommand(this));
+
+        // Registrar comando de divorcio
+        getCommand("divorcio").setExecutor(new DivorceCommand(this));
+
+        // Registrar comando de teletransporte
+        getCommand("conyuge").setExecutor(new SpouseTeleportCommand(this));
+
+        // Registrar comandos administrativos
+        getCommand("marrycore").setExecutor(new AdminCommand(this));
+    }
+
+    private void registerListeners() {
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
+        getServer().getPluginManager().registerEvents(new ChatListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerInteractListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
+    }
+
+    private void scheduleRepeatingTasks() {
+        // Tarea de guardado automático cada 5 minutos
+        int saveInterval = getConfig().getInt("general.auto_save_interval", 5) * 60 * 20; // Convertir a ticks
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+            // Aquí puedes añadir lógica de guardado automático si es necesaria
+            if (getConfig().getBoolean("general.debug", false)) {
+                getLogger().info("Ejecutando guardado automático...");
+            }
+        }, saveInterval, saveInterval);
+
+        // Verificar recordatorios de bodas cada hora
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+            // Verificar bodas próximas y enviar recordatorios
+            checkUpcomingWeddings();
+        }, 20 * 60 * 60, 20 * 60 * 60); // Cada hora
+    }
+
+    private void checkUpcomingWeddings() {
+        // TODO: Implementar verificación de bodas próximas
+        // y envío de recordatorios a los jugadores
+    }
+
+    // Getters para uso en otras clases
     public Connection getConnection() {
         return connection;
     }
 
-    // Getter para la configuración de database
     public FileConfiguration getDatabaseConfig() {
         return databaseConfig;
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+
+    public MessageUtils getMessageUtils() {
+        return messageUtils;
+    }
+
+    // Método para recargar configuraciones
+    public void reloadConfigs() {
+        reloadConfig();
+        loadDatabaseConfig();
+        messageUtils.reloadMessages();
     }
 }
