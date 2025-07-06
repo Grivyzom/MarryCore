@@ -1,0 +1,6 @@
+name: MarryCore
+version: '0.1-SNAPSHOT'
+main: gc.grivyzom.marryCore.MarryCore
+api-version: '1.20'
+authors: [ Francisco Fuentes ]
+website: www.grivyzom.com
