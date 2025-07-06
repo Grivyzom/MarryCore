@@ -1,0 +1,376 @@
+# ========================================
+# MarryCore - Configuración General
+# Autor: Brocolitx
+# Versión: 0.0.1
+# ========================================
+
+# ========================================
+# CONFIGURACIONES GENERALES
+# ========================================
+general:
+  # Idioma del plugin (es, en, pt, fr)
+  language: "es"
+
+  # Habilitar debug en consola
+  debug: false
+
+  # Intervalo de guardado automático (en minutos)
+  auto_save_interval: 5
+
+  # Verificar actualizaciones al iniciar
+  check_updates: true
+
+# ========================================
+# SISTEMA DE MATRIMONIO
+# ========================================
+marriage:
+  # Configuraciones de propuesta
+  proposal:
+    # Tiempo límite para aceptar una propuesta (en minutos)
+    timeout: 5
+
+    # Distancia máxima para proponer matrimonio (en bloques)
+    max_distance: 10
+
+    # Requerir anillo de propuesta
+    require_ring: true
+
+    # Permitir propuestas entre el mismo género
+    same_gender_allowed: true
+
+    # Notificar a todos los jugadores online sobre compromisos
+    announce_engagements: true
+
+  # Configuraciones de ceremonia
+  wedding:
+    # Días mínimos de anticipación para programar una boda
+    min_advance_days: 1
+
+    # Días máximos de anticipación para programar una boda
+    max_advance_days: 30
+
+    # Duración máxima de una ceremonia (en minutos)
+    ceremony_duration: 10
+
+    # Máximo número de invitados por ceremonia
+    max_guests: 20
+
+    # Tiempo para votar en la ceremonia (en segundos)
+    voting_timeout: 120
+
+    # Ubicaciones disponibles para ceremonias
+    ceremony_locations:
+      beach:
+        name: "Playa Romántica"
+        world: "world"
+        x: 100
+        y: 64
+        z: 200
+        enabled: true
+
+      temple:
+        name: "Templo Sagrado"
+        world: "world"
+        x: -50
+        y: 80
+        z: -100
+        enabled: true
+
+      garden:
+        name: "Jardín de Rosas"
+        world: "world"
+        x: 300
+        y: 65
+        z: 150
+        enabled: false
+
+# ========================================
+# SISTEMA ECONÓMICO
+# ========================================
+economy:
+  # Habilitar integración con economía (requiere Vault)
+  enabled: false
+
+  # Costos en dinero
+  costs:
+    # Costo por programar una ceremonia
+    wedding_ceremony: 1000.0
+
+    # Costo por cada invitado adicional (después de los primeros 5)
+    per_guest: 50.0
+
+    # Costo del divorcio
+    divorce: 500.0
+
+  # Recompensas
+  rewards:
+    # Dinero recibido al casarse
+    marriage_bonus: 2000.0
+
+    # Dinero por completar misiones diarias de pareja
+    daily_mission: 100.0
+
+# ========================================
+# SISTEMA DE EXPERIENCIA
+# ========================================
+experience:
+  # Bonus de experiencia para parejas casadas
+  married_bonus:
+    # Porcentaje adicional de XP al craftear juntos
+    crafting_bonus: 10
+
+    # Porcentaje adicional de XP al minar juntos
+    mining_bonus: 5
+
+    # Porcentaje adicional de XP al matar mobs juntos
+    combat_bonus: 15
+
+    # Distancia máxima para recibir bonus (en bloques)
+    max_distance: 50
+
+  # Costo en experiencia
+  costs:
+    # Niveles requeridos para proponer matrimonio
+    proposal_cost: 5
+
+    # Niveles requeridos para programar ceremonia
+    ceremony_cost: 10
+
+# ========================================
+# BENEFICIOS DE MATRIMONIO
+# ========================================
+benefits:
+  # Teletransporte al cónyuge
+  teleport:
+    # Habilitar teletransporte
+    enabled: true
+
+    # Cooldown entre teletransportes (en minutos)
+    cooldown: 30
+
+    # Costo en experiencia por teletransporte
+    experience_cost: 1
+
+    # Cancelar si el jugador se mueve durante el teletransporte
+    cancel_on_move: true
+
+    # Tiempo de carga del teletransporte (en segundos)
+    warmup_time: 3
+
+  # Chat privado entre cónyuges
+  private_chat:
+    # Habilitar chat privado
+    enabled: true
+
+    # Comando para usar el chat privado
+    command: "pc"
+
+    # Formato del mensaje
+    format: "&d[♥] &f{sender}: {message}"
+
+  # Misiones diarias
+  daily_missions:
+    # Habilitar misiones diarias para parejas
+    enabled: true
+
+    # Hora de reset de misiones (formato 24h)
+    reset_time: "00:00"
+
+    # Misiones disponibles
+    missions:
+      mine_together:
+        name: "Minar Juntos"
+        description: "Minen 64 bloques de piedra estando cerca"
+        requirement: 64
+        reward_money: 100
+        reward_exp: 5
+
+      craft_together:
+        name: "Craftear Juntos"
+        description: "Crafteen 32 ítems estando cerca"
+        requirement: 32
+        reward_money: 75
+        reward_exp: 3
+
+# ========================================
+# CONFIGURACIONES DE CHAT
+# ========================================
+chat:
+  # Formato para mostrar estado civil en chat
+  display_status:
+    # Habilitar mostrar estado en chat
+    enabled: true
+
+    # Formato para solteros
+    single_format: ""
+
+    # Formato para comprometidos
+    engaged_format: "&7[&bComprometido&7]"
+
+    # Formato para casados
+    married_format: "&7[&d♥ {partner}&7]"
+
+  # Anuncios globales
+  announcements:
+    # Anunciar compromisos
+    engagements: true
+
+    # Anunciar matrimonios
+    marriages: true
+
+    # Anunciar divorcios
+    divorces: false
+
+# ========================================
+# CONFIGURACIONES DE TIEMPO
+# ========================================
+time:
+  # Formato de fecha para mostrar
+  date_format: "dd/MM/yyyy"
+
+  # Formato de hora para mostrar
+  time_format: "HH:mm"
+
+  # Zona horaria del servidor
+  timezone: "America/Santiago"
+
+  # Horarios disponibles para ceremonias
+  ceremony_hours:
+    - "10:00"
+    - "14:00"
+    - "16:00"
+    - "18:00"
+    - "20:00"
+
+# ========================================
+# INTEGRACIONES CON OTROS PLUGINS
+# ========================================
+integrations:
+  # PlaceholderAPI
+  placeholderapi:
+    enabled: true
+
+    # Placeholders disponibles:
+    # %marrycore_status% - Estado civil
+    # %marrycore_partner% - Nombre del cónyuge
+    # %marrycore_wedding_date% - Fecha de boda
+
+  # LuckPerms
+  luckperms:
+    enabled: true
+
+    # Añadir prefijos según estado civil
+    add_prefixes: false
+
+  # Vault (Economía)
+  vault:
+    enabled: false
+
+  # WorldGuard
+  worldguard:
+    enabled: false
+
+    # Proteger ceremonias en regiones especiales
+    protect_ceremonies: true
+
+# ========================================
+# CONFIGURACIONES DE SEGURIDAD
+# ========================================
+security:
+  # Límites por jugador
+  limits:
+    # Máximo número de propuestas por día
+    max_proposals_per_day: 3
+
+    # Máximo número de matrimonios en toda la vida del jugador
+    max_lifetime_marriages: 5
+
+    # Tiempo mínimo entre divorcios (en días)
+    divorce_cooldown_days: 7
+
+  # Prevención de abuso
+  anti_abuse:
+    # Prevenir matrimonios instantáneos (requiere tiempo de juego)
+    minimum_playtime_hours: 24
+
+    # Prevenir matrimonios entre cuentas relacionadas
+    check_ip_similarity: true
+
+    # Requerir confirmación para divorcios
+    require_divorce_confirmation: true
+
+# ========================================
+# CONFIGURACIONES DE ALMACENAMIENTO
+# ========================================
+storage:
+  # Tipo de almacenamiento (mysql, sqlite, yaml)
+  type: "mysql"
+
+  # Configuraciones específicas para MySQL
+  mysql:
+    # Pool de conexiones
+    connection_pool:
+      maximum_pool_size: 10
+      minimum_idle: 5
+      connection_timeout: 30000
+      idle_timeout: 600000
+      max_lifetime: 1800000
+
+  # Backup automático
+  backup:
+    # Habilitar backups automáticos
+    enabled: true
+
+    # Intervalo de backup (en horas)
+    interval_hours: 24
+
+    # Número máximo de backups a mantener
+    max_backups: 7
+
+# ========================================
+# CONFIGURACIONES DE RENDIMIENTO
+# ========================================
+performance:
+  # Cache de datos
+  cache:
+    # Habilitar cache en memoria
+    enabled: true
+
+    # Tiempo de vida del cache (en minutos)
+    expiry_minutes: 30
+
+    # Tamaño máximo del cache
+    max_size: 1000
+
+  # Optimizaciones
+  optimizations:
+    # Cargar datos de forma asíncrona
+    async_loading: true
+
+    # Limitar consultas de base de datos por tick
+    max_queries_per_tick: 5
+
+# ========================================
+# CONFIGURACIONES DE DEBUG
+# ========================================
+debug:
+  # Nivel de logging (INFO, WARNING, SEVERE)
+  log_level: "INFO"
+
+  # Logear todas las consultas SQL
+  log_sql_queries: false
+
+  # Logear todos los comandos ejecutados
+  log_commands: false
+
+  # Mostrar información de rendimiento
+  show_performance_stats: false
+
+# ========================================
+# NOTAS DE CONFIGURACIÓN
+# ========================================
+# 1. Reinicia el servidor después de cambiar configuraciones importantes
+# 2. Los tiempos están en la unidad especificada en cada sección
+# 3. Las coordenadas de ceremonias deben existir y ser accesibles
+# 4. La integración económica requiere Vault instalado
+# 5. Algunas funciones requieren permisos específicos
