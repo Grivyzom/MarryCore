@@ -1,0 +1,34 @@
+# ========================================
+# MarryCore - Configuración de Base de Datos
+# Autor: Brocolitx
+# Versión: 0.0.1
+# ========================================
+
+database:
+  # Configuración del servidor MySQL
+  host: "localhost"
+  port: 3306
+  name: "marrycore"
+
+  # Credenciales de acceso
+  username: "root"
+  password: ""
+
+  # Configuraciones adicionales
+  useSSL: false
+  autoReconnect: true
+
+  # Configuraciones de conexión avanzadas (opcionales)
+  # maxConnections: 10
+  # connectionTimeout: 30000
+  # maxLifetime: 1800000
+
+# ========================================
+# Instrucciones de configuración:
+# ========================================
+# 1. Cambie 'host' por la IP de su servidor MySQL
+# 2. Modifique 'port' si usa un puerto diferente al 3306
+# 3. Establezca el nombre de su base de datos en 'name'
+# 4. Configure su usuario y contraseña MySQL
+# 5. Guarde el archivo y reinicie el servidor
+# ========================================

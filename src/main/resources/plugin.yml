@@ -1,6 +1,65 @@
 name: MarryCore
-version: '0.1-SNAPSHOT'
+version: '0.0.1'
 main: gc.grivyzom.marryCore.MarryCore
 api-version: '1.20'
-authors: [ Francisco Fuentes ]
+authors: [ Brocolitx ]
 website: www.grivyzom.com
+description: Sistema completo de matrimonio para servidores de Minecraft Survival
+softdepend: [PlaceholderAPI, LuckPerms]
+
+commands:
+  marry:
+    description: Comando principal para el sistema de matrimonio
+    aliases: [casarse, matrimonio]
+    usage: /marry <jugador> - Proponer matrimonio a un jugador
+    permission: marrycore.marry
+    permission-message: §cNo tienes permisos para usar este comando.
+
+  casamiento:
+    description: Programar fecha de casamiento
+    usage: /casamiento <fecha> [hora] - Programar ceremonia de matrimonio
+    permission: marrycore.wedding
+    permission-message: §cNo tienes permisos para usar este comando.
+
+  invitados:
+    description: Gestionar invitados para la ceremonia
+    usage: /invitados <add|remove|list> [jugador] - Gestionar lista de invitados
+    permission: marrycore.guests
+    permission-message: §cNo tienes permisos para usar este comando.
+
+  divorcio:
+    description: Divorciarse de la pareja actual
+    usage: /divorcio - Divorciarse de la pareja actual
+    permission: marrycore.divorce
+    permission-message: §cNo tienes permisos para usar este comando.
+
+permissions:
+  marrycore.*:
+    description: Acceso completo a todas las funciones de MarryCore
+    default: op
+    children:
+      marrycore.marry: true
+      marrycore.wedding: true
+      marrycore.guests: true
+      marrycore.divorce: true
+      marrycore.admin: true
+
+  marrycore.marry:
+    description: Permite proponer matrimonio
+    default: true
+
+  marrycore.wedding:
+    description: Permite programar ceremonias de matrimonio
+    default: true
+
+  marrycore.guests:
+    description: Permite gestionar invitados
+    default: true
+
+  marrycore.divorce:
+    description: Permite divorciarse
+    default: true
+
+  marrycore.admin:
+    description: Comandos administrativos del sistema de matrimonio
+    default: op
