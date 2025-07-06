@@ -152,23 +152,73 @@ public class MarryCommand implements CommandExecutor {
     /**
      * Maneja el comando de regalo entre parejas CON VALIDACIONES MEJORADAS
      */
+    /**
+     * Maneja el comando de regalo entre parejas CON VALIDACIONES MEJORADAS
+     * CORREGIDO: Ahora verifica correctamente el estado real del jugador
+     */
     private boolean handleGiftCommand(Player player) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
+                // CORRECCIÓN: Obtener estado actualizado y sincronizado
+                plugin.getDatabaseManager().synchronizePlayerStatus(player.getUniqueId());
                 MarryPlayer mp = plugin.getDatabaseManager().getPlayerData(player.getUniqueId());
 
-                // Sólo si está casado
-                if (mp.getStatus() != MaritalStatus.CASADO || mp.getPartnerUuid() == null) {
+                // CORRECCIÓN: Verificar estado real desde la base de datos
+                MaritalStatus actualStatus = plugin.getDatabaseManager().getActualMaritalStatus(player.getUniqueId());
+
+                // Log para debug
+                if (plugin.getConfig().getBoolean("general.debug", false)) {
+                    plugin.getLogger().info("Gift Debug - " + player.getName() +
+                            " Estado en tabla: " + mp.getStatus() +
+                            " Estado real: " + actualStatus +
+                            " Tiene pareja: " + mp.hasPartner());
+                }
+
+                // CORRECCIÓN: Verificar usando el estado real
+                if ((actualStatus != MaritalStatus.CASADO && actualStatus != MaritalStatus.COMPROMETIDO)
+                        || mp.getPartnerUuid() == null) {
+
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         player.sendMessage("§c♥ No tienes pareja con quien compartir regalos.");
+
+                        // Información adicional para debug
+                        if (plugin.getConfig().getBoolean("general.debug", false)) {
+                            player.sendMessage("§7Debug: Estado=" + actualStatus + ", Pareja=" +
+                                    (mp.getPartnerUuid() != null ? "Sí" : "No"));
+                        }
                     });
                     return;
                 }
 
-                Player pareja = Bukkit.getPlayer(mp.getPartnerUuid());
+                // CORRECCIÓN: Verificar que la pareja existe y está online usando datos actuales
+                Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(player.getUniqueId());
+
+                if (marriageInfo == null) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage("§c♥ No se encontró información de tu matrimonio activo.");
+                    });
+                    return;
+                }
+
+                // Obtener UUID de la pareja desde el matrimonio activo
+                String player1Uuid = (String) marriageInfo.get("player1_uuid");
+                String player2Uuid = (String) marriageInfo.get("player2_uuid");
+
+                UUID partnerUuid;
+                String partnerName;
+
+                if (player.getUniqueId().toString().equals(player1Uuid)) {
+                    partnerUuid = UUID.fromString(player2Uuid);
+                    partnerName = (String) marriageInfo.get("player2_name");
+                } else {
+                    partnerUuid = UUID.fromString(player1Uuid);
+                    partnerName = (String) marriageInfo.get("player1_name");
+                }
+
+                Player pareja = Bukkit.getPlayer(partnerUuid);
                 if (pareja == null || !pareja.isOnline()) {
                     Bukkit.getScheduler().runTask(plugin, () -> {
-                        player.sendMessage("§c♥ Tu pareja no está en línea.");
+                        player.sendMessage("§c♥ Tu pareja " + partnerName + " no está en línea.");
                     });
                     return;
                 }
@@ -205,7 +255,7 @@ public class MarryCommand implements CommandExecutor {
                         player.getInventory().setItemInMainHand(null);
                     }
 
-                    // Mensajes románticos
+                    // Mensajes románticos con nombres reales
                     String itemName = regalo.getType().name().toLowerCase().replace("_", " ");
                     player.sendMessage("§a♥ Has regalado §f" + itemName + " §aa tu pareja §e" + pareja.getName() + "§a! ♥");
                     pareja.sendMessage("§a♥ Tu pareja §e" + player.getName() + " §ate ha regalado §f" + itemName + "§a! ♥");
@@ -220,10 +270,16 @@ public class MarryCommand implements CommandExecutor {
                     } catch (Exception e) {
                         // Si las partículas fallan, continuar
                     }
+
+                    // Log exitoso
+                    if (plugin.getConfig().getBoolean("general.debug", false)) {
+                        plugin.getLogger().info("Regalo exitoso: " + player.getName() + " -> " + pareja.getName() + " (" + itemName + ")");
+                    }
                 });
 
             } catch (Exception e) {
                 plugin.getLogger().warning("Error en sistema de regalos: " + e.getMessage());
+                e.printStackTrace();
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     player.sendMessage("§c♥ Error al procesar el regalo.");
                 });
@@ -232,7 +288,6 @@ public class MarryCommand implements CommandExecutor {
 
         return true;
     }
-
     /**
      * NUEVA FUNCIÓN: Verifica si un ítem está protegido y no se puede regalar
      */
