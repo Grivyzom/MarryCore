@@ -16,15 +16,15 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
+import org.bukkit.Sound;
+import org.bukkit.Location;
 
 import java.sql.SQLException;
 import java.util.*;
 
 /**
  * Listener mejorado para manejar interacciones de jugadores.
- * Incluye sistema de regalos de flores entre parejas casadas.
+ * CORREGIDO: Sistema de regalos de flores entre parejas.
  *
  * @author Brocolitx
  * @version 0.0.1
@@ -114,7 +114,7 @@ public class PlayerInteractListener implements Listener {
     }
 
     /**
-     * NUEVO: Handler principal para regalar flores a la pareja
+     * CORREGIDO: Handler principal para regalar flores a la pareja
      */
     @EventHandler
     public void onPlayerGiftFlower(PlayerInteractEntityEvent event) {
@@ -146,14 +146,34 @@ public class PlayerInteractListener implements Listener {
             return;
         }
 
-        // Verificar asíncronamente si son pareja casada
+        // Verificar asíncronamente si son pareja
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                // Obtener datos del jugador que regala
+                // CORRECCIÓN 1: Obtener datos del jugador que regala con sincronización
+                plugin.getDatabaseManager().synchronizePlayerStatus(giver.getUniqueId());
                 MarryPlayer giverData = plugin.getDatabaseManager().getPlayerData(giver.getUniqueId());
 
-                // Verificar que esté casado
-                if (giverData.getStatus() != MaritalStatus.CASADO) {
+                // CORRECCIÓN 2: Obtener el estado real actualizado
+                MaritalStatus actualStatus = plugin.getDatabaseManager().getActualMaritalStatus(giver.getUniqueId());
+
+                // CORRECCIÓN 3: Verificar que esté casado O comprometido (no solo casado)
+                if (actualStatus != MaritalStatus.CASADO && actualStatus != MaritalStatus.COMPROMETIDO) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        String message = messageUtils.getMessage("flowers.gift.not-married");
+                        giver.sendMessage(messageUtils.getPrefix() + message);
+
+                        // Debug adicional
+                        if (plugin.getConfig().getBoolean("general.debug", false)) {
+                            giver.sendMessage("§7Debug: Estado actual=" + actualStatus + ", Estado en tabla=" + giverData.getStatus());
+                        }
+                    });
+                    return;
+                }
+
+                // CORRECCIÓN 4: Verificar que tenga pareja usando información real del matrimonio
+                Map<String, Object> marriageInfo = plugin.getDatabaseManager().getActiveMarriageInfo(giver.getUniqueId());
+
+                if (marriageInfo == null) {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         String message = messageUtils.getMessage("flowers.gift.not-married");
                         giver.sendMessage(messageUtils.getPrefix() + message);
@@ -161,17 +181,23 @@ public class PlayerInteractListener implements Listener {
                     return;
                 }
 
-                // Verificar que tenga pareja
-                if (!giverData.hasPartner()) {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        String message = messageUtils.getMessage("flowers.gift.not-married");
-                        giver.sendMessage(messageUtils.getPrefix() + message);
-                    });
-                    return;
+                // CORRECCIÓN 5: Obtener UUID de la pareja desde el matrimonio activo
+                String player1Uuid = (String) marriageInfo.get("player1_uuid");
+                String player2Uuid = (String) marriageInfo.get("player2_uuid");
+
+                UUID partnerUuid;
+                String partnerName;
+
+                if (giver.getUniqueId().toString().equals(player1Uuid)) {
+                    partnerUuid = UUID.fromString(player2Uuid);
+                    partnerName = (String) marriageInfo.get("player2_name");
+                } else {
+                    partnerUuid = UUID.fromString(player1Uuid);
+                    partnerName = (String) marriageInfo.get("player1_name");
                 }
 
-                // Verificar que el receptor sea su pareja
-                if (!giverData.getPartnerUuid().equals(receiver.getUniqueId())) {
+                // CORRECCIÓN 6: Verificar que el receptor sea exactamente su pareja
+                if (!partnerUuid.equals(receiver.getUniqueId())) {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         String message = messageUtils.getMessage("flowers.instructions.only-flowers");
                         giver.sendMessage(messageUtils.getPrefix() + message);
@@ -183,7 +209,7 @@ public class PlayerInteractListener implements Listener {
                 if (!receiver.isOnline()) {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         String message = messageUtils.getMessage("flowers.gift.partner-offline",
-                                "{partner}", receiver.getName());
+                                "{partner}", partnerName);
                         giver.sendMessage(messageUtils.getPrefix() + message);
                     });
                     return;
@@ -205,7 +231,7 @@ public class PlayerInteractListener implements Listener {
     }
 
     /**
-     * Procesa el regalo de flor entre la pareja casada
+     * CORREGIDO: Procesa el regalo de flor entre la pareja (solo efectos visuales)
      */
     private void processFlowerGift(Player giver, Player receiver, ItemStack flowerItem) {
         // Verificar que el receptor tenga espacio en el inventario
@@ -254,119 +280,127 @@ public class PlayerInteractListener implements Listener {
             receiver.sendMessage(formattedRomanticMessage);
         }
 
-        // Efectos visuales - Partículas de corazones
-        spawnHeartParticles(receiver);
-
-        // Aplicar efecto de poción según el tipo de flor
-        applyFlowerEffect(receiver, giftFlower.getType());
+        // CORRECCIÓN 7: SOLO efectos visuales - NO efectos de pociones
+        spawnFlowerVisualEffects(giver, receiver, giftFlower.getType());
 
         // Sonidos románticos
         playRomanticSounds(giver, receiver);
 
         // Log para debug
         if (plugin.getConfig().getBoolean("general.debug", false)) {
-            plugin.getLogger().info("Flor regalada: " + giver.getName() + " -> " + receiver.getName() +
+            plugin.getLogger().info("Flor regalada exitosamente: " + giver.getName() + " -> " + receiver.getName() +
                     " (" + flowerName + ")");
         }
     }
 
     /**
-     * Aplica efectos de poción según el tipo de flor
+     * NUEVO: Genera efectos visuales específicos según el tipo de flor (SIN pociones)
      */
-    private void applyFlowerEffect(Player receiver, Material flowerType) {
-        PotionEffect effect = null;
-
-        switch (flowerType) {
-            case DANDELION:
-                effect = new PotionEffect(PotionEffectType.SPEED, 10 * 20, 1); // Velocidad II por 10s
-                break;
-            case POPPY:
-                effect = new PotionEffect(PotionEffectType.JUMP, 8 * 20, 1); // Salto II por 8s
-                break;
-            case BLUE_ORCHID:
-                effect = new PotionEffect(PotionEffectType.REGENERATION, 5 * 20, 0); // Regeneración I por 5s
-                break;
-            case ALLIUM:
-                effect = new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 12 * 20, 0); // Resistencia I por 12s
-                break;
-            case AZURE_BLUET:
-                effect = new PotionEffect(PotionEffectType.NIGHT_VISION, 15 * 20, 0); // Visión nocturna por 15s
-                break;
-            case RED_TULIP:
-                effect = new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 10 * 20, 0); // Fuerza I por 10s
-                break;
-            case ORANGE_TULIP:
-                effect = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 10 * 20, 0); // Resistencia al fuego por 10s
-                break;
-            case WHITE_TULIP:
-                effect = new PotionEffect(PotionEffectType.SATURATION, 5 * 20, 0); // Saturación por 5s
-                break;
-            case PINK_TULIP:
-                effect = new PotionEffect(PotionEffectType.INVISIBILITY, 8 * 20, 0); // Invisibilidad por 8s
-                break;
-            case OXEYE_DAISY:
-                effect = new PotionEffect(PotionEffectType.HEALTH_BOOST, 20 * 20, 0); // Vida extra por 20s
-                break;
-            case CORNFLOWER:
-                effect = new PotionEffect(PotionEffectType.FAST_DIGGING, 10 * 20, 0); // Prisa por 10s
-                break;
-            case LILY_OF_THE_VALLEY:
-                // Esta flor es venenosa en la vida real, pero aquí damos suerte
-                effect = new PotionEffect(PotionEffectType.LUCK, 30 * 20, 0); // Suerte por 30s
-                break;
-            case SUNFLOWER:
-                effect = new PotionEffect(PotionEffectType.ABSORPTION, 20 * 20, 1); // Absorción II por 20s
-                break;
-            case LILAC:
-                effect = new PotionEffect(PotionEffectType.SLOW_FALLING, 15 * 20, 0); // Caída lenta por 15s
-                break;
-            case ROSE_BUSH:
-                effect = new PotionEffect(PotionEffectType.HERO_OF_THE_VILLAGE, 10 * 20, 0); // Héroe por 10s
-                break;
-            case PEONY:
-                effect = new PotionEffect(PotionEffectType.DOLPHINS_GRACE, 12 * 20, 0); // Gracia de delfín por 12s
-                break;
-            case WITHER_ROSE:
-                // Para parejas con sentido del humor - efecto de brillo
-                effect = new PotionEffect(PotionEffectType.GLOWING, 8 * 20, 0); // Brillo por 8s
-                break;
-            default:
-                // Flor no reconocida, dar regeneración básica
-                effect = new PotionEffect(PotionEffectType.REGENERATION, 3 * 20, 0);
-                break;
-        }
-
-        if (effect != null) {
-            receiver.addPotionEffect(effect);
-        }
-    }
-
-    /**
-     * Genera partículas de corazones alrededor del receptor
-     */
-    private void spawnHeartParticles(Player receiver) {
+    private void spawnFlowerVisualEffects(Player giver, Player receiver, Material flowerType) {
         try {
-            receiver.getWorld().spawnParticle(
-                    Particle.HEART,
-                    receiver.getLocation().add(0, 2, 0),
-                    10, // cantidad
-                    0.5, 0.5, 0.5, // dispersión X, Y, Z
-                    0.01 // velocidad extra
-            );
+            Location giverLoc = giver.getLocation().add(0, 2, 0);
+            Location receiverLoc = receiver.getLocation().add(0, 2, 0);
 
-            // Partículas adicionales alrededor del jugador
-            for (int i = 0; i < 5; i++) {
+            // Efectos base de corazones para todos
+            receiver.getWorld().spawnParticle(Particle.HEART, receiverLoc, 8, 0.5, 0.5, 0.5, 0.01);
+            giver.getWorld().spawnParticle(Particle.HEART, giverLoc, 5, 0.5, 0.5, 0.5, 0.01);
+
+            // Efectos específicos por tipo de flor (SOLO VISUALES)
+            switch (flowerType) {
+                case DANDELION:
+                    // Partículas doradas flotantes
+                    receiver.getWorld().spawnParticle(Particle.CRIT_MAGIC, receiverLoc, 15, 1, 1, 1, 0.1);
+                    break;
+
+                case POPPY:
+                    // Partículas rojas intensas
+                    receiver.getWorld().spawnParticle(Particle.REDSTONE, receiverLoc, 20, 0.5, 0.5, 0.5, 0);
+                    break;
+
+                case BLUE_ORCHID:
+                    // Partículas azules mágicas
+                    receiver.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, receiverLoc, 25, 1, 1, 1, 0.5);
+                    break;
+
+                case ALLIUM:
+                    // Partículas púrpuras
+                    receiver.getWorld().spawnParticle(Particle.DRAGON_BREATH, receiverLoc, 12, 0.8, 0.8, 0.8, 0.02);
+                    break;
+
+                case RED_TULIP:
+                    // Explosión de partículas rojas
+                    receiver.getWorld().spawnParticle(Particle.LAVA, receiverLoc, 8, 0.3, 0.3, 0.3, 0);
+                    break;
+
+                case WHITE_TULIP:
+                    // Partículas blancas suaves
+                    receiver.getWorld().spawnParticle(Particle.CLOUD, receiverLoc, 15, 0.5, 0.5, 0.5, 0.05);
+                    break;
+
+                case PINK_TULIP:
+                    // Partículas rosas brillantes
+                    receiver.getWorld().spawnParticle(Particle.NOTE, receiverLoc, 10, 0.5, 0.5, 0.5, 0);
+                    break;
+
+                case OXEYE_DAISY:
+                    // Partículas blancas con toques dorados
+                    receiver.getWorld().spawnParticle(Particle.TOTEM, receiverLoc, 20, 0.8, 0.8, 0.8, 0.1);
+                    break;
+
+                case SUNFLOWER:
+                    // Partículas doradas abundantes
+                    receiver.getWorld().spawnParticle(Particle.CRIT_MAGIC, receiverLoc, 30, 1.2, 1.2, 1.2, 0.2);
+                    break;
+
+                case ROSE_BUSH:
+                    // Múltiples corazones con partículas rojas
+                    receiver.getWorld().spawnParticle(Particle.HEART, receiverLoc, 15, 1, 1, 1, 0.1);
+                    receiver.getWorld().spawnParticle(Particle.REDSTONE, receiverLoc, 25, 1, 1, 1, 0);
+                    break;
+
+                case LILAC:
+                    // Partículas flotantes suaves
+                    receiver.getWorld().spawnParticle(Particle.END_ROD, receiverLoc, 12, 0.6, 0.6, 0.6, 0.05);
+                    break;
+
+                case PEONY:
+                    // Explosión colorida
+                    receiver.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, receiverLoc, 20, 1, 1, 1, 0.1);
+                    break;
+
+                case WITHER_ROSE:
+                    // Partículas oscuras pero románticas
+                    receiver.getWorld().spawnParticle(Particle.SMOKE_NORMAL, receiverLoc, 8, 0.3, 0.3, 0.3, 0.02);
+                    receiver.getWorld().spawnParticle(Particle.HEART, receiverLoc, 5, 0.2, 0.2, 0.2, 0.01);
+                    break;
+
+                default:
+                    // Efecto por defecto: partículas felices
+                    receiver.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, receiverLoc, 15, 0.8, 0.8, 0.8, 0.1);
+                    break;
+            }
+
+            // Partículas adicionales alrededor de ambos jugadores
+            for (int i = 0; i < 3; i++) {
                 double offsetX = (Math.random() - 0.5) * 2;
                 double offsetZ = (Math.random() - 0.5) * 2;
+
                 receiver.getWorld().spawnParticle(
                         Particle.VILLAGER_HAPPY,
                         receiver.getLocation().add(offsetX, 1, offsetZ),
                         1, 0, 0, 0, 0
                 );
+
+                giver.getWorld().spawnParticle(
+                        Particle.VILLAGER_HAPPY,
+                        giver.getLocation().add(offsetX, 1, offsetZ),
+                        1, 0, 0, 0, 0
+                );
             }
+
         } catch (Exception e) {
             // Si las partículas fallan en alguna versión, continuar sin ellas
-            plugin.getLogger().warning("Error al generar partículas de flores: " + e.getMessage());
+            plugin.getLogger().warning("Error al generar efectos visuales de flores: " + e.getMessage());
         }
     }
 
@@ -377,16 +411,16 @@ public class PlayerInteractListener implements Listener {
         try {
             // Sonido para el que regala
             giver.playSound(giver.getLocation(),
-                    org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1.5f);
+                    Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1.5f);
 
             // Sonido para el que recibe (más agudo y dulce)
             receiver.playSound(receiver.getLocation(),
-                    org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.8f);
+                    Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.8f);
 
             // Sonido adicional de campana ocasional
             if (new Random().nextInt(100) < 30) { // 30% de probabilidad
                 receiver.playSound(receiver.getLocation(),
-                        org.bukkit.Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 2.0f);
+                        Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 2.0f);
             }
 
         } catch (Exception e) {

@@ -243,10 +243,14 @@ kisses:
 # ========================================
 # SISTEMA DE REGALOS DE FLORES (AÑADIR A messages.yml)
 # ========================================
+# ========================================
+# SISTEMA DE REGALOS DE FLORES (CORREGIDO)
+# ========================================
 flowers:
   # Mensajes del sistema de regalos
   gift:
-    not-married: "&c🌸 Solo las parejas casadas pueden regalarse flores."
+    # CORREGIDO: Ahora incluye parejas comprometidas
+    not-married: "&c🌸 Solo las parejas casadas o comprometidas pueden regalarse flores."
     partner-offline: "&c🌸 Tu pareja {partner} no está en línea."
     inventory-full: "&c🌸 El inventario de tu pareja está lleno."
     cooldown-active: "&c🌸 Debes esperar {seconds} segundos antes de regalar otra flor."
@@ -258,6 +262,22 @@ flowers:
   instructions:
     how-to: "&e🌸 Para regalar una flor: &aSostén una flor y haz click derecho sobre tu pareja."
     only-flowers: "&c🌸 Solo puedes regalar flores a tu pareja."
+
+  # Efectos visuales por tipo de flor (SOLO VISUALES)
+  effects:
+    dandelion: "&e✨ Partículas doradas danzan en el aire..."
+    poppy: "&c❤ Explosión de amor rojo intenso..."
+    blue_orchid: "&9💫 Magia azul envuelve el momento..."
+    allium: "&5🔮 Partículas púrpuras de ensueño..."
+    red_tulip: "&c🔥 Pasión ardiente florece..."
+    white_tulip: "&f☁ Pureza y ternura se manifiestan..."
+    pink_tulip: "&d🎵 Notas de amor flotan suavemente..."
+    oxeye_daisy: "&f✨ Luz dorada de felicidad..."
+    sunflower: "&e☀ Radiante como el sol del amor..."
+    rose_bush: "&c🌹 El amor más puro se revela..."
+    lilac: "&5🌸 Delicadeza etérea en el aire..."
+    peony: "&d🎆 Explosión de colores del corazón..."
+    wither_rose: "&8🖤 Amor que trasciende la oscuridad..."
 
   # Nombres de flores personalizados
   names:
@@ -278,6 +298,32 @@ flowers:
     rose_bush: "un rosal"
     peony: "una peonía"
     wither_rose: "una rosa marchita"
+
+  # Guía de efectos para jugadores
+  guide:
+    header: "&d§l======= GUÍA DE FLORES ROMÁNTICAS ======="
+    subtitle: "&e🌸 Para regalar: &aSostén una flor y haz click derecho sobre tu pareja"
+    cooldown: "&e⏱️ Cooldown: &c60 segundos entre regalos"
+    effects_title: "&a§lEfectos visuales de las flores:"
+    effects:
+      - "&e🌻 Diente de León: &fPartículas doradas mágicas"
+      - "&c🌺 Amapola: &fExplosión de amor rojo"
+      - "&9🌸 Orquídea Azul: &fMagia azul encantada"
+      - "&5🌿 Allium: &fPartículas púrpuras místicas"
+      - "&b🌼 Bluet Azul: &fBrillo suave celestial"
+      - "&c🌷 Tulipán Rojo: &fFuego de pasión"
+      - "&6🌷 Tulipán Naranja: &fCalor del corazón"
+      - "&f🌷 Tulipán Blanco: &fPureza en las nubes"
+      - "&d🌷 Tulipán Rosa: &fNotas musicales de amor"
+      - "&e🌼 Margarita: &fLuz dorada de felicidad"
+      - "&1🌾 Aciano: &fDestellos azul profundo"
+      - "&f🔔 Lirio del Valle: &fElegancia en el aire"
+      - "&e🌻 Girasol: &fRadiancia solar del amor"
+      - "&d🌿 Lila: &fDelicadeza etérea flotante"
+      - "&c🌹 Rosal: &fApoteosis del amor verdadero"
+      - "&d🌸 Peonía: &fFuegos artificiales del corazón"
+      - "&8🥀 Rosa Marchita: &fAmor que trasciende todo"
+    footer: "&d§l======================================="
 # ========================================
 # COLORES Y SÍMBOLOS
 # ========================================
