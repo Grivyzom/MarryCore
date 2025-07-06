@@ -7,6 +7,8 @@ import gc.grivyzom.marryCore.utils.MessageUtils;
 import gc.grivyzom.marryCore.utils.ValidationUtils;
 import gc.grivyzom.marryCore.items.ItemManager;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -50,10 +52,20 @@ public class MarryCommand implements CommandExecutor {
             return true;
         }
 
-        // Verificar argumentos
+        // NUEVA FUNCIONALIDAD: Comando para hacer regalos
+        if (args.length > 0 && args[0].equalsIgnoreCase("gift")) {
+            return handleGiftCommand(player);
+        }
+
+        // NUEVA FUNCIONALIDAD: Comando para teletransporte
+        if (args.length > 0 && args[0].equalsIgnoreCase("tp")) {
+            return handleTeleportCommand(player);
+        }
+
+        // Verificar argumentos para propuesta
         if (args.length != 1) {
             messageUtils.sendMessage(player, "general.invalid-command",
-                    "{usage}", "/marry <jugador>");
+                    "{usage}", "/marry <jugador> o /marry gift o /marry tp");
             return true;
         }
 
@@ -129,6 +141,151 @@ public class MarryCommand implements CommandExecutor {
                 plugin.getLogger().severe("Error al procesar propuesta de matrimonio: " + e.getMessage());
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     messageUtils.sendMessage(player, "general.database-error");
+                });
+            }
+        });
+
+        return true;
+    }
+
+    /**
+     * Maneja el comando de regalo entre parejas
+     */
+    private boolean handleGiftCommand(Player player) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                MarryPlayer mp = plugin.getDatabaseManager().getPlayerData(player.getUniqueId());
+
+                // Sólo si está casado
+                if (mp.getStatus() != MaritalStatus.CASADO || mp.getPartnerUuid() == null) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage("§c♥ No tienes pareja con quien compartir regalos.");
+                    });
+                    return;
+                }
+
+                Player pareja = Bukkit.getPlayer(mp.getPartnerUuid());
+                if (pareja == null || !pareja.isOnline()) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage("§c♥ Tu pareja no está en línea.");
+                    });
+                    return;
+                }
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    ItemStack item = player.getInventory().getItemInMainHand();
+                    if (item == null || item.getType() == org.bukkit.Material.AIR) {
+                        player.sendMessage("§c♥ Debes sostener el item que quieras regalar en tu mano.");
+                        return;
+                    }
+
+                    // Clonamos el stack y lo damos a la pareja
+                    ItemStack regalo = item.clone();
+                    regalo.setAmount(1);
+
+                    // Verificar espacio en inventario
+                    if (pareja.getInventory().firstEmpty() == -1) {
+                        player.sendMessage("§c♥ El inventario de tu pareja está lleno.");
+                        return;
+                    }
+
+                    pareja.getInventory().addItem(regalo);
+
+                    // Reducimos uno en la mano
+                    if (item.getAmount() > 1) {
+                        item.setAmount(item.getAmount() - 1);
+                    } else {
+                        player.getInventory().setItemInMainHand(null);
+                    }
+
+                    // Mensajes románticos
+                    String itemName = regalo.getType().name().toLowerCase().replace("_", " ");
+                    player.sendMessage("§a♥ Has regalado §f" + itemName + " §aa tu pareja §e" + pareja.getName() + "§a! ♥");
+                    pareja.sendMessage("§a♥ Tu pareja §e" + player.getName() + " §ate ha regalado §f" + itemName + "§a! ♥");
+
+                    // Efectos de partículas
+                    try {
+                        Location locPlayer = player.getLocation().add(0, 2, 0);
+                        Location locPareja = pareja.getLocation().add(0, 2, 0);
+
+                        player.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, locPlayer, 10, 0.5, 0.5, 0.5, 0.1);
+                        pareja.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, locPareja, 10, 0.5, 0.5, 0.5, 0.1);
+                    } catch (Exception e) {
+                        // Si las partículas fallan, continuar
+                    }
+                });
+
+            } catch (Exception e) {
+                plugin.getLogger().warning("Error en sistema de regalos: " + e.getMessage());
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    player.sendMessage("§c♥ Error al procesar el regalo.");
+                });
+            }
+        });
+
+        return true;
+    }
+
+    /**
+     * Maneja el comando de teletransporte al cónyuge
+     */
+    private boolean handleTeleportCommand(Player player) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                MarryPlayer playerData = plugin.getDatabaseManager().getPlayerData(player.getUniqueId());
+
+                // Verificar que esté casado
+                if (playerData.getStatus() != MaritalStatus.CASADO) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage("§c♥ Debes estar casado/a para teletransportarte a tu pareja.");
+                    });
+                    return;
+                }
+
+                // Verificar que tenga pareja
+                if (!playerData.hasPartner()) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage("§c♥ No tienes pareja a quien teletransportarte.");
+                    });
+                    return;
+                }
+
+                // Verificar que la pareja esté conectada
+                Player partner = Bukkit.getPlayer(playerData.getPartnerUuid());
+                if (partner == null) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage("§c♥ Tu pareja no está en línea.");
+                    });
+                    return;
+                }
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    // Verificar distancia de mundos
+                    if (!player.getWorld().equals(partner.getWorld())) {
+                        player.sendMessage("§c♥ Tu pareja está en otro mundo.");
+                        return;
+                    }
+
+                    // Teletransporte simple
+                    Location targetLocation = partner.getLocation().clone();
+                    targetLocation.add(1, 0, 0); // Offset para no aparecer encima
+
+                    player.teleport(targetLocation);
+                    player.sendMessage("§a♥ Te has teletransportado a tu pareja §e" + partner.getName() + "§a! ♥");
+                    partner.sendMessage("§a♥ Tu pareja §e" + player.getName() + " §ase ha teletransportado a ti! ♥");
+
+                    // Efectos de partículas
+                    try {
+                        partner.getWorld().spawnParticle(Particle.PORTAL, targetLocation, 20, 0.5, 1, 0.5, 0);
+                    } catch (Exception e) {
+                        // Si las partículas fallan, continuar
+                    }
+                });
+
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error al procesar teletransporte: " + e.getMessage());
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    player.sendMessage("§c♥ Error al teletransportarte.");
                 });
             }
         });

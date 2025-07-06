@@ -362,7 +362,8 @@ public final class MarryCore extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new ChatListener(this), this);
             getServer().getPluginManager().registerEvents(new PlayerInteractListener(this), this);
             getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
-            getLogger().info("Listeners registrados correctamente");
+            getServer().getPluginManager().registerEvents(new KissListener(this), this); // NUEVO LISTENER AÑADIDO
+            getLogger().info("Listeners registrados correctamente (incluido KissListener)");
         } catch (Exception e) {
             getLogger().severe("Error al registrar listeners: " + e.getMessage());
             throw e;
