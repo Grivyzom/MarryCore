@@ -1,7 +1,7 @@
 # ========================================
 # MarryCore - Configuración General
 # Autor: Brocolitx
-# Versión: 0.0.1
+# Versión: 0.1.0 - ACTUALIZADO CON NOVIAZGO
 # ========================================
 
 # ========================================
@@ -21,18 +21,67 @@ general:
   check_updates: true
 
 # ========================================
-# SISTEMA DE MATRIMONIO
+# SISTEMA DE NOVIAZGO (NUEVO)
+# ========================================
+dating:
+  # Configuraciones de propuesta de noviazgo
+  proposal:
+    # Tiempo límite para aceptar una propuesta de noviazgo (en minutos)
+    timeout: 3
+
+    # Distancia máxima para proponer noviazgo (en bloques)
+    max_distance: 8
+
+    # Permitir noviazgo entre el mismo género
+    same_gender_allowed: true
+
+    # Tiempo mínimo de noviazgo antes de poder comprometerse (en días)
+    min_dating_days: 3
+
+  # Beneficios del noviazgo
+  benefits:
+    # Teletransporte básico (con más restricciones que matrimonio)
+    teleport:
+      enabled: true
+      cooldown: 60  # 60 minutos (más que matrimonio)
+      max_distance: 100  # Solo dentro de 100 bloques
+      same_world_only: true
+
+    # Chat privado básico
+    private_chat:
+      enabled: true
+      command: "nc"  # novio chat
+      format: "&6[♡] &f{sender}: {message}"
+
+    # Sistema de regalos
+    gifts:
+      enabled: true
+      cooldown: 300  # 5 minutos entre regalos
+      allowed_items:
+        - flowers
+        - food
+        - basic_materials
+
+  # Anuncios
+  announcements:
+    # Anunciar cuando dos personas empiezan a salir
+    relationships: true
+    # Anunciar rupturas
+    breakups: false
+
+# ========================================
+# SISTEMA DE MATRIMONIO (ACTUALIZADO)
 # ========================================
 marriage:
-  # Configuraciones de propuesta
+  # Configuraciones de propuesta (ahora para compromiso)
   proposal:
-    # Tiempo límite para aceptar una propuesta (en minutos)
+    # Tiempo límite para aceptar una propuesta de compromiso (en minutos)
     timeout: 5
 
-    # Distancia máxima para proponer matrimonio (en bloques)
+    # Distancia máxima para proponer compromiso (en bloques)
     max_distance: 10
 
-    # Requerir anillo de propuesta
+    # Requerir anillo de propuesta para compromiso
     require_ring: true
 
     # Permitir propuestas entre el mismo género
@@ -40,6 +89,9 @@ marriage:
 
     # Notificar a todos los jugadores online sobre compromisos
     announce_engagements: true
+
+    # NUEVO: Requerir estar de novios antes de comprometerse
+    require_dating_first: false  # false para compatibilidad hacia atrás
 
   # Configuraciones de ceremonia
   wedding:
@@ -57,6 +109,9 @@ marriage:
 
     # Tiempo para votar en la ceremonia (en segundos)
     voting_timeout: 120
+
+    # NUEVO: Tiempo mínimo de compromiso antes de casarse (en días)
+    min_engagement_days: 7
 
     # Ubicaciones disponibles para ceremonias
     ceremony_locations:
@@ -85,7 +140,52 @@ marriage:
         enabled: false
 
 # ========================================
-# SISTEMA ECONÓMICO
+# PROGRESIÓN DE RELACIONES (NUEVO)
+# ========================================
+relationship_progression:
+  # Habilitar sistema de progresión por etapas
+  enabled: true
+
+  # Etapas de relación
+  stages:
+    dating:
+      # Beneficios limitados
+      benefits_multiplier: 0.3
+      # Comandos disponibles
+      available_commands:
+        - "novio"
+        - "regalo"
+        - "tp"  # limitado
+
+    engaged:
+      # Beneficios medios
+      benefits_multiplier: 0.7
+      # Comandos adicionales
+      available_commands:
+        - "casamiento"
+        - "invitados"
+
+    married:
+      # Beneficios completos
+      benefits_multiplier: 1.0
+      # Todos los comandos disponibles
+
+  # Requisitos para avanzar
+  advancement_requirements:
+    dating_to_engaged:
+      min_days: 3
+      mutual_agreement: true
+      items_required:
+        - engagement_ring
+
+    engaged_to_married:
+      min_days: 7
+      ceremony_required: true
+      items_required:
+        - wedding_rings
+
+# ========================================
+# SISTEMA ECONÓMICO (ACTUALIZADO)
 # ========================================
 economy:
   # Habilitar integración con economía (requiere Vault)
@@ -93,17 +193,30 @@ economy:
 
   # Costos en dinero
   costs:
+    # NUEVO: Costo por empezar una relación
+    start_dating: 100.0
+
+    # NUEVO: Costo por avanzar a compromiso
+    engagement: 500.0
+
     # Costo por programar una ceremonia
     wedding_ceremony: 1000.0
 
     # Costo por cada invitado adicional (después de los primeros 5)
     per_guest: 50.0
 
-    # Costo del divorcio
+    # Costo del divorcio/ruptura
     divorce: 500.0
+    breakup: 200.0  # NUEVO: más barato que divorcio
 
   # Recompensas
   rewards:
+    # NUEVO: Dinero recibido al empezar a salir
+    dating_bonus: 200.0
+
+    # Dinero recibido al comprometerse
+    engagement_bonus: 800.0
+
     # Dinero recibido al casarse
     marriage_bonus: 2000.0
 
@@ -111,89 +224,105 @@ economy:
     daily_mission: 100.0
 
 # ========================================
-# SISTEMA DE EXPERIENCIA
-# ========================================
-experience:
-  # Bonus de experiencia para parejas casadas
-  married_bonus:
-    # Porcentaje adicional de XP al craftear juntos
-    crafting_bonus: 10
-
-    # Porcentaje adicional de XP al minar juntos
-    mining_bonus: 5
-
-    # Porcentaje adicional de XP al matar mobs juntos
-    combat_bonus: 15
-
-    # Distancia máxima para recibir bonus (en bloques)
-    max_distance: 50
-
-  # Costo en experiencia
-  costs:
-    # Niveles requeridos para proponer matrimonio
-    proposal_cost: 5
-
-    # Niveles requeridos para programar ceremonia
-    ceremony_cost: 10
-
-# ========================================
-# BENEFICIOS DE MATRIMONIO
+# BENEFICIOS DE RELACIÓN (ACTUALIZADO)
 # ========================================
 benefits:
-  # Teletransporte al cónyuge
+  # Teletransporte al cónyuge/pareja
   teleport:
-    # Habilitar teletransporte
-    enabled: true
+    # Configuraciones por tipo de relación
+    dating:
+      enabled: true
+      cooldown: 60  # minutos
+      experience_cost: 3
+      max_distance: 100  # bloques
+      same_world_only: true
+      warmup_time: 5  # segundos
 
-    # Cooldown entre teletransportes (en minutos)
-    cooldown: 30
+    engaged:
+      enabled: true
+      cooldown: 45  # minutos
+      experience_cost: 2
+      max_distance: 500  # bloques
+      same_world_only: false
+      warmup_time: 4  # segundos
 
-    # Costo en experiencia por teletransporte
-    experience_cost: 1
+    married:
+      enabled: true
+      cooldown: 30  # minutos
+      experience_cost: 1
+      max_distance: -1  # ilimitado
+      same_world_only: false
+      warmup_time: 3  # segundos
 
-    # Cancelar si el jugador se mueve durante el teletransporte
+    # Configuraciones generales
     cancel_on_move: true
+    cancel_on_damage: true
 
-    # Tiempo de carga del teletransporte (en segundos)
-    warmup_time: 3
-
-  # Chat privado entre cónyuges
+  # Chat privado entre parejas
   private_chat:
-    # Habilitar chat privado
-    enabled: true
+    dating:
+      enabled: true
+      command: "nc"  # novio chat
+      format: "&6[♡] &f{sender}: {message}"
 
-    # Comando para usar el chat privado
-    command: "pc"
+    engaged:
+      enabled: true
+      command: "pc"  # pareja chat
+      format: "&b[💍] &f{sender}: {message}"
 
-    # Formato del mensaje
-    format: "&d[♥] &f{sender}: {message}"
+    married:
+      enabled: true
+      command: "mc"  # matrimonio chat
+      format: "&d[♥] &f{sender}: {message}"
 
-  # Misiones diarias
-  daily_missions:
-    # Habilitar misiones diarias para parejas
-    enabled: true
+  # Bonus de experiencia
+  experience_bonus:
+    dating:
+      crafting_bonus: 5
+      mining_bonus: 3
+      combat_bonus: 5
+      max_distance: 30
 
-    # Hora de reset de misiones (formato 24h)
-    reset_time: "00:00"
+    engaged:
+      crafting_bonus: 8
+      mining_bonus: 5
+      combat_bonus: 10
+      max_distance: 40
 
-    # Misiones disponibles
-    missions:
-      mine_together:
-        name: "Minar Juntos"
-        description: "Minen 64 bloques de piedra estando cerca"
-        requirement: 64
-        reward_money: 100
-        reward_exp: 5
+    married:
+      crafting_bonus: 15
+      mining_bonus: 10
+      combat_bonus: 20
+      max_distance: 50
 
-      craft_together:
-        name: "Craftear Juntos"
-        description: "Crafteen 32 ítems estando cerca"
-        requirement: 32
-        reward_money: 75
-        reward_exp: 3
+  # Sistema de regalos
+  gifts:
+    dating:
+      enabled: true
+      cooldown: 300  # 5 minutos
+      allowed_categories:
+        - flowers
+        - food
+        - basic_blocks
+
+    engaged:
+      enabled: true
+      cooldown: 180  # 3 minutos
+      allowed_categories:
+        - flowers
+        - food
+        - basic_blocks
+        - tools
+        - decorative
+
+    married:
+      enabled: true
+      cooldown: 60  # 1 minuto
+      allowed_categories:
+        - all  # pueden regalar cualquier cosa
 
 # ========================================
-# CONFIGURACIONES DE CHAT
+# CONFIGURACIONES DE CHAT (ACTUALIZADO)
 # ========================================
 chat:
   # Formato para mostrar estado civil en chat
@@ -204,173 +333,158 @@ chat:
     # Formato para solteros
     single_format: ""
 
+    # NUEVO: Formato para novios
+    dating_format: "&7[&6♡&7]"
+
     # Formato para comprometidos
-    engaged_format: "&7[&bComprometido&7]"
+    engaged_format: "&7[&b💍&7]"
 
     # Formato para casados
     married_format: "&7[&d♥ {partner}&7]"
 
   # Anuncios globales
   announcements:
+    # NUEVO: Anunciar relaciones de noviazgo
+    dating: true
+
     # Anunciar compromisos
     engagements: true
 
     # Anunciar matrimonios
     marriages: true
 
+    # NUEVO: Anunciar rupturas
+    breakups: false
+
     # Anunciar divorcios
     divorces: false
 
 # ========================================
-# CONFIGURACIONES DE TIEMPO
-# ========================================
-time:
-  # Formato de fecha para mostrar
-  date_format: "dd/MM/yyyy"
-
-  # Formato de hora para mostrar
-  time_format: "HH:mm"
-
-  # Zona horaria del servidor
-  timezone: "America/Santiago"
-
-  # Horarios disponibles para ceremonias
-  ceremony_hours:
-    - "10:00"
-    - "14:00"
-    - "16:00"
-    - "18:00"
-    - "20:00"
-
-# ========================================
-# INTEGRACIONES CON OTROS PLUGINS
-# ========================================
-integrations:
-  # PlaceholderAPI
-  placeholderapi:
-    enabled: true
-
-    # Placeholders disponibles:
-    # %marrycore_status% - Estado civil
-    # %marrycore_partner% - Nombre del cónyuge
-    # %marrycore_wedding_date% - Fecha de boda
-
-  # LuckPerms
-  luckperms:
-    enabled: true
-
-    # Añadir prefijos según estado civil
-    add_prefixes: false
-
-  # Vault (Economía)
-  vault:
-    enabled: false
-
-  # WorldGuard
-  worldguard:
-    enabled: false
-
-    # Proteger ceremonias en regiones especiales
-    protect_ceremonies: true
-
-# ========================================
-# CONFIGURACIONES DE SEGURIDAD
+# CONFIGURACIONES DE SEGURIDAD (ACTUALIZADO)
 # ========================================
 security:
   # Límites por jugador
   limits:
-    # Máximo número de propuestas por día
+    # NUEVO: Máximo número de propuestas de noviazgo por día
+    max_dating_proposals_per_day: 5
+
+    # Máximo número de propuestas de compromiso por día
     max_proposals_per_day: 3
 
-    # Máximo número de matrimonios en toda la vida del jugador
-    max_lifetime_marriages: 5
+    # Máximo número de relaciones en toda la vida del jugador
+    max_lifetime_relationships: 10
+
+    # Tiempo mínimo entre rupturas (en días)
+    breakup_cooldown_days: 3
 
     # Tiempo mínimo entre divorcios (en días)
     divorce_cooldown_days: 7
 
   # Prevención de abuso
   anti_abuse:
-    # Prevenir matrimonios instantáneos (requiere tiempo de juego)
-    minimum_playtime_hours: 24
+    # Prevenir relaciones instantáneas (requiere tiempo de juego)
+    minimum_playtime_hours: 12  # Reducido para noviazgo
 
-    # Prevenir matrimonios entre cuentas relacionadas
+    # Tiempo mínimo en cada etapa de relación
+    min_dating_duration_days: 3
+    min_engagement_duration_days: 7
+
+    # Prevenir relaciones entre cuentas relacionadas
     check_ip_similarity: true
 
-    # Requerir confirmación para divorcios
+    # Requerir confirmación para rupturas/divorcios
+    require_breakup_confirmation: true
     require_divorce_confirmation: true
 
 # ========================================
-# CONFIGURACIONES DE ALMACENAMIENTO
+# COMANDOS DISPONIBLES POR ESTADO (NUEVO)
 # ========================================
-storage:
-  # Tipo de almacenamiento (mysql, sqlite, yaml)
-  type: "mysql"
+commands:
+  # Comandos disponibles para solteros
+  single:
+    - "novio"  # proponer noviazgo
+    - "marry"  # proponer compromiso directo (si está habilitado)
 
-  # Configuraciones específicas para MySQL
-  mysql:
-    # Pool de conexiones
-    connection_pool:
-      maximum_pool_size: 10
-      minimum_idle: 5
-      connection_timeout: 30000
-      idle_timeout: 600000
-      max_lifetime: 1800000
+  # Comandos disponibles para novios
+  dating:
+    - "novio"  # gestionar relación
+    - "marry"  # avanzar a compromiso
+    - "regalo"  # hacer regalos
+    - "tp"     # teletransporte limitado
 
-  # Backup automático
-  backup:
-    # Habilitar backups automáticos
+  # Comandos disponibles para comprometidos
+  engaged:
+    - "casamiento"  # programar boda
+    - "invitados"   # gestionar invitados
+    - "marry"       # información/gestión
+    - "regalo"      # hacer regalos
+    - "tp"          # teletransporte mejorado
+
+  # Comandos disponibles para casados
+  married:
+    - "divorcio"    # divorciarse
+    - "conyuge"     # teletransporte completo
+    - "marry"       # información/gestión
+    - "regalo"      # hacer regalos sin restricciones
+
+# ========================================
+# PROGRESIÓN Y LOGROS (NUEVO)
+# ========================================
+progression:
+  # Sistema de logros de relación
+  achievements:
     enabled: true
 
-    # Intervalo de backup (en horas)
-    interval_hours: 24
+    # Logros disponibles
+    milestones:
+      first_date:
+        name: "Primera Cita"
+        description: "Empezar tu primera relación"
+        reward_money: 500
 
-    # Número máximo de backups a mantener
-    max_backups: 7
+      one_week_dating:
+        name: "Una Semana Juntos"
+        description: "Estar de novios por una semana"
+        reward_money: 300
+
+      first_engagement:
+        name: "Primer Compromiso"
+        description: "Comprometerse por primera vez"
+        reward_money: 1000
+
+      first_marriage:
+        name: "Primer Matrimonio"
+        description: "Casarse por primera vez"
+        reward_money: 2500
+
+      long_relationship:
+        name: "Relación Duradera"
+        description: "Estar en la misma relación por 30 días"
+        reward_money: 5000
 
 # ========================================
-# CONFIGURACIONES DE RENDIMIENTO
+# NOTIFICACIONES Y RECORDATORIOS (NUEVO)
 # ========================================
-performance:
-  # Cache de datos
-  cache:
-    # Habilitar cache en memoria
+notifications:
+  # Recordatorios automáticos
+  reminders:
     enabled: true
 
-    # Tiempo de vida del cache (en minutos)
-    expiry_minutes: 30
+    # Recordar avance de relación
+    relationship_progression:
+      enabled: true
+      notify_after_days: 7  # Notificar después de 7 días que puede avanzar
 
-    # Tamaño máximo del cache
-    max_size: 1000
-
-  # Optimizaciones
-  optimizations:
-    # Cargar datos de forma asíncrona
-    async_loading: true
-
-    # Limitar consultas de base de datos por tick
-    max_queries_per_tick: 5
-
-# ========================================
-# CONFIGURACIONES DE DEBUG
-# ========================================
-debug:
-  # Nivel de logging (INFO, WARNING, SEVERE)
-  log_level: "INFO"
-
-  # Logear todas las consultas SQL
-  log_sql_queries: false
-
-  # Logear todos los comandos ejecutados
-  log_commands: false
-
-  # Mostrar información de rendimiento
-  show_performance_stats: false
+    # Recordatorios de aniversario
+    anniversaries:
+      enabled: true
+      notify_days_before: 1  # Notificar 1 día antes del aniversario
 
 # ========================================
 # NOTAS DE CONFIGURACIÓN
 # ========================================
-# 1. Reinicia el servidor después de cambiar configuraciones importantes
-# 2. Los tiempos están en la unidad especificada en cada sección
-# 3. Las coordenadas de ceremonias deben existir y ser accesibles
-# 4. La integración económica requiere Vault instalado
-# 5. Algunas funciones requieren permisos específicos
+# 1. El sistema de noviazgo es opcional y se puede deshabilitar
+# 2. Los jugadores pueden saltar del estado soltero a comprometido directamente
+# 3. Los beneficios aumentan progresivamente con cada etapa
+# 4. Los cooldowns y restricciones disminuyen al avanzar en la relación
+# 5. Se mantiene compatibilidad hacia atrás con sistemas anteriores

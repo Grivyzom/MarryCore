@@ -1,7 +1,7 @@
 # ========================================
 # MarryCore - Mensajes del Sistema
 # Autor: Brocolitx
-# Versión: 0.0.1 - ACTUALIZADO
+# Versión: 0.1.0 - ACTUALIZADO CON NOVIAZGO
 # ========================================
 
 # Prefijo general del plugin
@@ -19,40 +19,127 @@ general:
   confirmation-timeout: "&eEsta confirmación expirará en &c{time} &esegundos."
 
 # ========================================
-# SISTEMA DE MATRIMONIO
+# SISTEMA DE NOVIAZGO (NUEVO)
+# ========================================
+dating:
+  # Propuestas de noviazgo
+  proposal:
+    self-proposal: "&cNo puedes proponerte noviazgo a ti mismo."
+    already-pending: "&cYa hay una propuesta de noviazgo pendiente para este jugador."
+    proposal-sent: "&aHas propuesto noviazgo a &e{player}&a. Esperando respuesta..."
+    proposal-received: "&e{player} &ate ha propuesto empezar una relación!"
+    proposal-instruction: "&aEscribe &e'aceptar' &aen el chat para aceptar la propuesta de noviazgo."
+    proposal-timeout: "&cLa propuesta de noviazgo ha expirado."
+    too-far: "&cDebes estar a menos de &e{distance} &cbloques para proponer noviazgo."
+    already:
+      dating: "&cYa estás saliendo con alguien."
+      engaged: "&cYa estás comprometido/a con alguien."
+      married: "&cYa estás casado/a con alguien."
+
+  target:
+    unavailable:
+      dating: "&e{player} &cya está saliendo con otra persona."
+      engaged: "&e{player} &cya está comprometido/a con otra persona."
+      married: "&e{player} &cya está casado/a con otra persona."
+
+  # Aceptar propuesta de noviazgo
+  accept:
+    no-proposal: "&cNo tienes ninguna propuesta de noviazgo pendiente."
+    relationship-success: "&a¡Felicidades! &eAhora estás saliendo con &e{player}&a!"
+    relationship-announcement: "&6♡ &e{player1} &ay &e{player2} &ahan empezado una relación! &6♡"
+
+  # Rechazar propuesta de noviazgo
+  reject:
+    no-proposal: "&cNo tienes ninguna propuesta de noviazgo pendiente."
+    proposal-rejected: "&cHas rechazado la propuesta de noviazgo de &e{player}&c."
+    rejection-notification: "&e{player} &cha rechazado tu propuesta de noviazgo."
+
+  # Información de relación
+  info:
+    single: "&eActualmente estás soltero/a."
+    relationship: "&aEstado: &e{status} &acon &e{partner}"
+    no-data: "&cNo se encontraron datos de tu relación."
+
+  # Terminar relación (ruptura)
+  breakup:
+    not-dating: "&cNo estás saliendo con nadie actualmente."
+    no-partner: "&cNo tienes pareja con quien terminar."
+    success: "&aHas terminado tu relación con &e{player}&a."
+    notification: "&e{player} &aha terminado la relación contigo."
+    announcement: "&6♡ &e{player1} &ay &e{player2} &ahan terminado su relación."
+
+  # Ayuda del comando de noviazgo
+  help:
+    - "&6&l====== AYUDA DE NOVIAZGO ======"
+    - "&e/novio <jugador> &7- Proponer noviazgo"
+    - "&e/novio terminar &7- Terminar relación actual"
+    - "&e/novio info &7- Ver información de relación"
+    - "&e/novio ayuda &7- Mostrar esta ayuda"
+    - "&6&l==============================="
+
+# ========================================
+# SISTEMA DE MATRIMONIO (ACTUALIZADO)
 # ========================================
 marriage:
-  # Propuestas de matrimonio
+  # Propuestas de matrimonio (ahora para compromiso)
   proposal:
-    no-ring: "&cNecesitas un &eAnillo de Propuesta &cpara proponer matrimonio."
-    self-proposal: "&cNo puedes proponerte matrimonio a ti mismo."
+    no-ring: "&cNecesitas un &eAnillo de Propuesta &cpara proponer compromiso."
+    self-proposal: "&cNo puedes proponerte compromiso a ti mismo."
     already-married: "&cYa estás casado/a con alguien."
-    target-married: "&e{player} &cya está casado/a con otra persona."
     already-engaged: "&cYa estás comprometido/a con alguien."
+    already-dating: "&cYa estás saliendo con alguien. Usa &e/marry avanzar &cpara comprometerte."
+    target-married: "&e{player} &cya está casado/a con otra persona."
     target-engaged: "&e{player} &cya está comprometido/a con otra persona."
+    target-dating: "&e{player} &cya está saliendo con otra persona."
     already-pending: "&cYa hay una propuesta pendiente para este jugador."
-    proposal-sent: "&aHas propuesto matrimonio a &e{player}&a. Esperando respuesta..."
-    proposal-received: "&e{player} &ate ha propuesto matrimonio!"
+    proposal-sent: "&aHas propuesto compromiso a &e{player}&a. Esperando respuesta..."
+    proposal-received: "&e{player} &ate ha propuesto compromiso!"
     proposal-instruction: "&aEscribe &e'aceptar' &aen el chat para aceptar la propuesta."
-    proposal-timeout: "&cLa propuesta de matrimonio ha expirado."
-    too-far: "&cDebes estar a menos de &e{distance} &cbloques para proponer matrimonio."
+    proposal-timeout: "&cLa propuesta de compromiso ha expirado."
+    too-far: "&cDebes estar a menos de &e{distance} &cbloques para proponer compromiso."
 
-  # Aceptar propuesta
+  # Aceptar propuesta de compromiso
   accept:
-    no-proposal: "&cNo tienes ninguna propuesta de matrimonio pendiente."
-    proposal-expired: "&cLa propuesta de matrimonio ha expirado."
+    no-proposal: "&cNo tienes ninguna propuesta de compromiso pendiente."
+    proposal-expired: "&cLa propuesta de compromiso ha expirado."
     engagement-success: "&a¡Felicidades! &eAhora estás comprometido/a con &e{player}&a!"
-    engagement-announcement: "&e¡{player1} &ay &e{player2} &ase han comprometido! &l¡Felicidades!"
+    engagement-announcement: "&b💍 &e{player1} &ay &e{player2} &ase han comprometido! &l¡Felicidades!"
     rings-received: "&aHas recibido un &eAnillo Nupcial&a."
 
-  # Rechazar propuesta
+  # Rechazar propuesta de compromiso
   reject:
-    no-proposal: "&cNo tienes ninguna propuesta de matrimonio pendiente."
-    proposal-rejected: "&cHas rechazado la propuesta de matrimonio de &e{player}&c."
-    rejection-notification: "&e{player} &cha rechazado tu propuesta de matrimonio."
+    no-proposal: "&cNo tienes ninguna propuesta de compromiso pendiente."
+    proposal-rejected: "&cHas rechazado la propuesta de compromiso de &e{player}&c."
+    rejection-notification: "&e{player} &cha rechazado tu propuesta de compromiso."
 
 # ========================================
-# SISTEMA DE CASAMIENTO
+# SISTEMA DE PROGRESIÓN DE RELACIONES (NUEVO)
+# ========================================
+relationship:
+  # Información de relación
+  info:
+    single: "&eActualmente estás soltero/a."
+    no-data: "&cNo se encontraron datos de tu relación."
+    header: "&a&l====== INFORMACIÓN DE RELACIÓN ======"
+    status: "&eEstado: &f{status}"
+    partner: "&ePareja: &f{partner}"
+    time: "&eTiempo juntos: &f{days} días"
+    can-advance: "&aPuedes avanzar a: &e{next_status}"
+    advance-command: "&aUsa &e/marry avanzar &apara avanzar en tu relación."
+    footer: "&a&l===================================="
+
+  # Avanzar en la relación
+  advance:
+    not-dating: "&cDebes estar saliendo con alguien para avanzar la relación."
+    already-engaged: "&cYa estás comprometido/a."
+    already-married: "&cYa estás casado/a."
+    no-partner: "&cNo tienes pareja para avanzar la relación."
+    partner-offline: "&cTu pareja debe estar en línea para avanzar la relación."
+    cannot-advance: "&cNo puedes avanzar en tu relación en este momento."
+    engagement-success: "&a¡Han avanzado a compromiso! &eAhora estás comprometido/a con &e{player}&a!"
+
+# ========================================
+# SISTEMA DE CASAMIENTO (ACTUALIZADO)
 # ========================================
 wedding:
   # Programar ceremonia
@@ -154,7 +241,7 @@ guests:
     - "&a&l================================"
 
 # ========================================
-# SISTEMA DE DIVORCIO
+# SISTEMA DE DIVORCIO Y RUPTURA (ACTUALIZADO)
 # ========================================
 divorce:
   not-married: "&cNo estás casado/a o comprometido/a con nadie."
@@ -167,41 +254,65 @@ divorce:
   announcement: "&e{player1} &ay &e{player2} &ase han divorciado."
   cooldown-active: "&cDebes esperar &e{days} &cdías antes de poder divorciarte nuevamente."
 
+# Ruptura para novios
+breakup:
+  not-dating: "&cNo estás saliendo con nadie."
+  confirmation-required: "&cEscribe &e/novio terminar confirmar &cpara proceder con la ruptura."
+  no-confirmation-pending: "&cNo tienes ninguna confirmación de ruptura pendiente."
+  confirmation-expired: "&cLa confirmación de ruptura ha expirado."
+  processing: "&eProcesando ruptura..."
+  success: "&aHas terminado tu relación con &e{player}&a."
+  notification: "&e{player} &aha terminado la relación contigo."
+  announcement: "&e{player1} &ay &e{player2} &ahan terminado su relación."
+  cooldown-active: "&cDebes esperar &e{days} &cdías antes de poder terminar otra relación."
+
 # ========================================
-# BENEFICIOS DE MATRIMONIO
+# BENEFICIOS DE RELACIÓN (ACTUALIZADO)
 # ========================================
 benefits:
+  # Teletransporte
   teleport:
-    disabled: "&cEl teletransporte al cónyuge está deshabilitado."
-    not-married: "&cDebes estar casado/a para usar el teletransporte."
+    disabled: "&cEl teletransporte a la pareja está deshabilitado."
+    not-in-relationship: "&cDebes estar en una relación para usar el teletransporte."
     no-partner: "&cNo tienes pareja a quien teletransportarte."
-    partner-offline: "&cTu cónyuge no está conectado."
-    cooldown: "&cDebes esperar &e{time} &cantes de teletransportarte a tu cónyuge."
+    partner-offline: "&cTu pareja no está conectada."
+    cooldown: "&cDebes esperar &e{time} &cantes de teletransportarte a tu pareja."
     insufficient-experience: "&cNecesitas al menos &e{cost} &cniveles de experiencia."
     in-combat: "&cNo puedes teletransportarte mientras estás en combate."
     cancelled-moved: "&cTeletransporte cancelado porque te moviste."
+    too-far: "&cTu pareja está muy lejos para el teletransporte."
+    different-world: "&cTu pareja está en otro mundo y no puedes teletransportarte."
     teleporting: "&aTeletransportándote a &e{player}&a..."
-    teleport-success: "&a¡Te has teletransportado a tu cónyuge!"
+    teleport-success: "&a¡Te has teletransportado a tu pareja!"
     spouse-teleported: "&aTu pareja &e{player} &ase ha teletransportado a ti."
 
+  # Experiencia
   experience:
-    bonus-received: "&a+{amount}% experiencia por trabajar con tu cónyuge."
+    bonus-received: "&a+{amount}% experiencia por trabajar con tu pareja."
 
+  # Misiones diarias
   daily-mission:
-    available: "&aTienes una misión diaria disponible con tu cónyuge."
+    available: "&aTienes una misión diaria disponible con tu pareja."
     completed: "&a¡Misión diaria completada! Recompensa: &e{reward}"
 
+  # Muerte de pareja
   death:
     spouse-died: "&c♥ Tu pareja &e{player} &cha muerto en &f{location}&c."
+    partner-died: "&c♡ Tu pareja &e{player} &cha muerto en &f{location}&c."
 
+  # Chat privado
   private-chat:
     enabled: "&aChat privado habilitado. Usa &e/{command} <mensaje>&a."
     disabled: "&cEl chat privado está deshabilitado."
 
 # ========================================
-# COMANDOS DE ADMINISTRACIÓN
+# COMANDOS DE ADMINISTRACIÓN (ACTUALIZADO)
 # ========================================
 admin:
+  force-dating:
+    success: "&aHas forzado el noviazgo entre &e{player1} &ay &e{player2}&a."
+    notification: "&aHas sido puesto/a en una relación con &e{player} &apor un administrador."
+
   force-engagement:
     success: "&aHas forzado el compromiso entre &e{player1} &ay &e{player2}&a."
     notification: "&aHas sido comprometido/a con &e{player} &apor un administrador."
@@ -209,6 +320,10 @@ admin:
   force-marriage:
     success: "&aHas forzado el matrimonio entre &e{player1} &ay &e{player2}&a."
     notification: "&aHas sido casado/a con &e{player} &apor un administrador."
+
+  force-breakup:
+    success: "&aHas forzado la ruptura entre &e{player1} &ay &e{player2}&a."
+    notification: "&cTu relación ha sido terminada por un administrador."
 
   force-divorce:
     success: "&aHas forzado el divorcio entre &e{player1} &ay &e{player2}&a."
@@ -218,39 +333,62 @@ admin:
     success: "&aHas dado un &e{ring_type} &aa &e{player}&a."
 
   reset-player:
-    success: "&aHas reiniciado los datos de matrimonio de &e{player}&a."
-    notification: "&cTus datos de matrimonio han sido reiniciados por un administrador."
+    success: "&aHas reiniciado los datos de relación de &e{player}&a."
+    notification: "&cTus datos de relación han sido reiniciados por un administrador."
 
   repair-database:
     success: "&aBase de datos reparada. &e{count} &aregistros corregidos."
     no-issues: "&aNo se encontraron problemas en la base de datos."
 
 # ========================================
-# NUEVOS MENSAJES PARA CORRECCIONES
+# SISTEMA DE PROGRESIÓN Y LOGROS (NUEVO)
 # ========================================
-debug:
-  status-synced: "&aEstado sincronizado para &e{player}&a: &f{status}"
-  marriage-recorded: "&aMatrimonio registrado correctamente en la base de datos."
-  engagement-recorded: "&aCompromiso registrado correctamente en la base de datos."
+progression:
+  achievements:
+    unlocked: "&a¡Logro desbloqueado! &e{achievement}"
+    reward: "&aRecompensa: &e{reward}"
 
-gifts:
-  protected-item: "&c♥ No puedes regalar este ítem especial."
-  item-protected: "&cEste ítem está protegido y no se puede regalar."
+  milestones:
+    first_date:
+      name: "Primera Cita"
+      description: "Empezar tu primera relación"
+      message: "&a¡Felicidades por tu primera relación!"
 
-kisses:
-  cooldown-active: "&c♥ Debes esperar &e{seconds} &csegundos antes de dar otro beso."
+    one_week_dating:
+      name: "Una Semana Juntos"
+      description: "Estar de novios por una semana"
+      message: "&a¡Una semana juntos! La relación va bien."
+
+    first_engagement:
+      name: "Primer Compromiso"
+      description: "Comprometerse por primera vez"
+      message: "&a¡Tu primer compromiso! ¡Qué emocionante!"
+
+    first_marriage:
+      name: "Primer Matrimonio"
+      description: "Casarse por primera vez"
+      message: "&a¡Tu primer matrimonio! ¡Felicidades!"
+
+    long_relationship:
+      name: "Relación Duradera"
+      description: "Estar en la misma relación por 30 días"
+      message: "&a¡30 días juntos! Una relación verdaderamente sólida."
 
 # ========================================
-# SISTEMA DE REGALOS DE FLORES (AÑADIR A messages.yml)
+# NOTIFICACIONES Y RECORDATORIOS (NUEVO)
 # ========================================
+notifications:
+  relationship-reminder: "&eRecordatorio: Puedes avanzar tu relación con &a{partner} &eusando &a/marry avanzar&e."
+  anniversary-reminder: "&d♥ Mañana es tu aniversario con &e{partner}&d! ♥"
+  anniversary-today: "&d♥ ¡Hoy es tu aniversario con &e{partner}&d! ¡Feliz aniversario! ♥"
+
 # ========================================
-# SISTEMA DE REGALOS DE FLORES (CORREGIDO)
+# SISTEMA DE REGALOS DE FLORES (ACTUALIZADO)
 # ========================================
 flowers:
-  # Mensajes del sistema de regalos
   gift:
-    # CORREGIDO: Ahora incluye parejas comprometidas
-    not-married: "&c🌸 Solo las parejas casadas o comprometidas pueden regalarse flores."
+    # Ahora incluye todas las etapas de relación
+    not-in-relationship: "&c🌸 Solo las parejas pueden regalarse flores."
     partner-offline: "&c🌸 Tu pareja {partner} no está en línea."
     inventory-full: "&c🌸 El inventario de tu pareja está lleno."
     cooldown-active: "&c🌸 Debes esperar {seconds} segundos antes de regalar otra flor."
@@ -258,72 +396,27 @@ flowers:
     gift-received: "&d🌸 Tu pareja &e{partner} &dte ha regalado {flower}&d! 🌸"
     romantic-message: "&7💕 \"{message}\""
 
-  # Instrucciones de uso
   instructions:
     how-to: "&e🌸 Para regalar una flor: &aSostén una flor y haz click derecho sobre tu pareja."
     only-flowers: "&c🌸 Solo puedes regalar flores a tu pareja."
 
-  # Efectos visuales por tipo de flor (SOLO VISUALES)
-  effects:
-    dandelion: "&e✨ Partículas doradas danzan en el aire..."
-    poppy: "&c❤ Explosión de amor rojo intenso..."
-    blue_orchid: "&9💫 Magia azul envuelve el momento..."
-    allium: "&5🔮 Partículas púrpuras de ensueño..."
-    red_tulip: "&c🔥 Pasión ardiente florece..."
-    white_tulip: "&f☁ Pureza y ternura se manifiestan..."
-    pink_tulip: "&d🎵 Notas de amor flotan suavemente..."
-    oxeye_daisy: "&f✨ Luz dorada de felicidad..."
-    sunflower: "&e☀ Radiante como el sol del amor..."
-    rose_bush: "&c🌹 El amor más puro se revela..."
-    lilac: "&5🌸 Delicadeza etérea en el aire..."
-    peony: "&d🎆 Explosión de colores del corazón..."
-    wither_rose: "&8🖤 Amor que trasciende la oscuridad..."
+# ========================================
+# MENSAJES DE DEBUG (ACTUALIZADO)
+# ========================================
+debug:
+  status-synced: "&aEstado sincronizado para &e{player}&a: &f{status}"
+  relationship-recorded: "&aRelación registrada correctamente en la base de datos."
+  engagement-recorded: "&aCompromiso registrado correctamente en la base de datos."
+  marriage-recorded: "&aMatrimonio registrado correctamente en la base de datos."
 
-  # Nombres de flores personalizados
-  names:
-    dandelion: "un diente de león"
-    poppy: "una amapola"
-    blue_orchid: "una orquídea azul"
-    allium: "un allium"
-    azure_bluet: "una bluet azul"
-    red_tulip: "un tulipán rojo"
-    orange_tulip: "un tulipán naranja"
-    white_tulip: "un tulipán blanco"
-    pink_tulip: "un tulipán rosa"
-    oxeye_daisy: "una margarita"
-    cornflower: "un aciano"
-    lily_of_the_valley: "un lirio del valle"
-    sunflower: "un girasol"
-    lilac: "una lila"
-    rose_bush: "un rosal"
-    peony: "una peonía"
-    wither_rose: "una rosa marchita"
-
-  # Guía de efectos para jugadores
-  guide:
-    header: "&d§l======= GUÍA DE FLORES ROMÁNTICAS ======="
-    subtitle: "&e🌸 Para regalar: &aSostén una flor y haz click derecho sobre tu pareja"
-    cooldown: "&e⏱️ Cooldown: &c60 segundos entre regalos"
-    effects_title: "&a§lEfectos visuales de las flores:"
-    effects:
-      - "&e🌻 Diente de León: &fPartículas doradas mágicas"
-      - "&c🌺 Amapola: &fExplosión de amor rojo"
-      - "&9🌸 Orquídea Azul: &fMagia azul encantada"
-      - "&5🌿 Allium: &fPartículas púrpuras místicas"
-      - "&b🌼 Bluet Azul: &fBrillo suave celestial"
-      - "&c🌷 Tulipán Rojo: &fFuego de pasión"
-      - "&6🌷 Tulipán Naranja: &fCalor del corazón"
-      - "&f🌷 Tulipán Blanco: &fPureza en las nubes"
-      - "&d🌷 Tulipán Rosa: &fNotas musicales de amor"
-      - "&e🌼 Margarita: &fLuz dorada de felicidad"
-      - "&1🌾 Aciano: &fDestellos azul profundo"
-      - "&f🔔 Lirio del Valle: &fElegancia en el aire"
-      - "&e🌻 Girasol: &fRadiancia solar del amor"
-      - "&d🌿 Lila: &fDelicadeza etérea flotante"
-      - "&c🌹 Rosal: &fApoteosis del amor verdadero"
-      - "&d🌸 Peonía: &fFuegos artificiales del corazón"
-      - "&8🥀 Rosa Marchita: &fAmor que trasciende todo"
-    footer: "&d§l======================================="
+# ========================================
+# COLORES Y SÍMBOLOS
+# ========================================
+# ♡ - Corazón para noviazgo
+# 💍 - Anillo para compromiso
+# ♥ - Corazón para matrimonio
+# 🌸 - Flor para regalos
+# 🎉 - Celebración para eventos especiales
 # ========================================
 # COLORES Y SÍMBOLOS
 # ========================================

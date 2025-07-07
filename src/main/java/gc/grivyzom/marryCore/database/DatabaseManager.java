@@ -176,15 +176,11 @@ public class DatabaseManager {
     }
 
     /**
-     * Crea un compromiso entre dos jugadores
+     * ACTUALIZADO: Convierte una relación de noviazgo en compromiso
      *
      * @param player1Uuid UUID del primer jugador
      * @param player2Uuid UUID del segundo jugador
      * @throws SQLException Si hay error en la base de datos
-     */
-    /**
-     * MÉTODO CORREGIDO: Crea un compromiso entre dos jugadores
-     * Mejorado para registrar correctamente los datos
      */
     public void createEngagement(UUID player1Uuid, UUID player2Uuid) throws SQLException {
         Connection conn = getConnection();
@@ -192,33 +188,81 @@ public class DatabaseManager {
         try {
             conn.setAutoCommit(false); // Iniciar transacción
 
-            // Actualizar estado de ambos jugadores
-            updatePlayerStatus(player1Uuid, MaritalStatus.COMPROMETIDO);
-            updatePlayerStatus(player2Uuid, MaritalStatus.COMPROMETIDO);
+            // Verificar que estén en una relación de noviazgo
+            String checkQuery = """
+            SELECT COUNT(*) as count FROM marry_marriages 
+            WHERE (player1_uuid = ? AND player2_uuid = ?) OR (player1_uuid = ? AND player2_uuid = ?) 
+            AND status = 'novio'
+        """;
 
-            // Establecer parejas
-            updatePlayerPartner(player1Uuid, player2Uuid);
-            updatePlayerPartner(player2Uuid, player1Uuid);
+            boolean isInRelationship = false;
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
+                checkStmt.setString(1, player1Uuid.toString());
+                checkStmt.setString(2, player2Uuid.toString());
+                checkStmt.setString(3, player2Uuid.toString());
+                checkStmt.setString(4, player1Uuid.toString());
 
-            // CORRECCIÓN: Crear registro en tabla de matrimonios con mejor manejo
-            String marriageQuery = """
+                try (ResultSet rs = checkStmt.executeQuery()) {
+                    if (rs.next()) {
+                        isInRelationship = rs.getInt("count") > 0;
+                    }
+                }
+            }
+
+            if (!isInRelationship) {
+                // Si no están de novios, crear registro nuevo (compatibilidad hacia atrás)
+                // Actualizar estado de ambos jugadores
+                updatePlayerStatus(player1Uuid, MaritalStatus.COMPROMETIDO);
+                updatePlayerStatus(player2Uuid, MaritalStatus.COMPROMETIDO);
+
+                // Establecer parejas
+                updatePlayerPartner(player1Uuid, player2Uuid);
+                updatePlayerPartner(player2Uuid, player1Uuid);
+
+                // Crear nuevo registro de compromiso
+                String marriageQuery = """
                 INSERT INTO marry_marriages (player1_uuid, player2_uuid, status, engagement_date, created_at, updated_at) 
                 VALUES (?, ?, 'comprometido', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """;
 
-            try (PreparedStatement stmt = conn.prepareStatement(marriageQuery)) {
-                stmt.setString(1, player1Uuid.toString());
-                stmt.setString(2, player2Uuid.toString());
+                try (PreparedStatement stmt = conn.prepareStatement(marriageQuery)) {
+                    stmt.setString(1, player1Uuid.toString());
+                    stmt.setString(2, player2Uuid.toString());
 
-                int rowsInserted = stmt.executeUpdate();
+                    int rowsInserted = stmt.executeUpdate();
 
-                if (rowsInserted == 0) {
-                    throw new SQLException("No se pudo crear el registro de compromiso en la base de datos");
+                    if (rowsInserted == 0) {
+                        throw new SQLException("No se pudo crear el registro de compromiso en la base de datos");
+                    }
                 }
+            } else {
+                // Están de novios, actualizar a compromiso
+                updatePlayerStatus(player1Uuid, MaritalStatus.COMPROMETIDO);
+                updatePlayerStatus(player2Uuid, MaritalStatus.COMPROMETIDO);
 
-                plugin.getLogger().info("Compromiso registrado correctamente en la base de datos");
+                // Actualizar registro existente de novio a comprometido
+                String updateQuery = """
+                UPDATE marry_marriages 
+                SET status = 'comprometido', updated_at = CURRENT_TIMESTAMP 
+                WHERE (player1_uuid = ? AND player2_uuid = ?) OR (player1_uuid = ? AND player2_uuid = ?) 
+                AND status = 'novio'
+            """;
+
+                try (PreparedStatement stmt = conn.prepareStatement(updateQuery)) {
+                    stmt.setString(1, player1Uuid.toString());
+                    stmt.setString(2, player2Uuid.toString());
+                    stmt.setString(3, player2Uuid.toString());
+                    stmt.setString(4, player1Uuid.toString());
+
+                    int rowsUpdated = stmt.executeUpdate();
+
+                    if (rowsUpdated == 0) {
+                        throw new SQLException("No se pudo actualizar la relación a compromiso");
+                    }
+                }
             }
 
+            plugin.getLogger().info("Compromiso registrado correctamente en la base de datos");
             conn.commit(); // Confirmar transacción
 
         } catch (SQLException e) {
@@ -228,7 +272,6 @@ public class DatabaseManager {
             conn.setAutoCommit(true); // Restaurar auto-commit
         }
     }
-
     /**
      * NUEVO MÉTODO: Obtiene la fecha de matrimonio real de un jugador
      */
@@ -462,17 +505,21 @@ public class DatabaseManager {
 
 
     /**
-     * MÉTODO CORREGIDO: Obtiene información de estado más precisa
+     * ACTUALIZADO: Obtiene el estado real del matrimonio incluyendo noviazgo
+     *
+     * @param playerUuid UUID del jugador
+     * @return MaritalStatus real del jugador
+     * @throws SQLException Si hay error en la base de datos
      */
     public MaritalStatus getActualMaritalStatus(UUID playerUuid) throws SQLException {
-        // Primero verificar en la tabla de matrimonios
+        // Verificar en la tabla de matrimonios incluyendo estado de novio
         String marriageQuery = """
-            SELECT status FROM marry_marriages 
-            WHERE (player1_uuid = ? OR player2_uuid = ?) 
-            AND status IN ('comprometido', 'casado')
-            ORDER BY updated_at DESC 
-            LIMIT 1
-        """;
+        SELECT status FROM marry_marriages 
+        WHERE (player1_uuid = ? OR player2_uuid = ?) 
+        AND status IN ('novio', 'comprometido', 'casado')
+        ORDER BY updated_at DESC 
+        LIMIT 1
+    """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(marriageQuery)) {
             stmt.setString(1, playerUuid.toString());
@@ -490,6 +537,54 @@ public class DatabaseManager {
         MarryPlayer playerData = getPlayerData(playerUuid);
         return playerData.getStatus();
     }
+
+    /**
+     * NUEVO: Obtiene información de relación activa incluyendo noviazgo
+     *
+     * @param playerUuid UUID del jugador
+     * @return Map con información de la relación activa
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public Map<String, Object> getActiveRelationshipInfo(UUID playerUuid) throws SQLException {
+        String query = """
+        SELECT m.*, 
+               p1.username as player1_name,
+               p2.username as player2_name
+        FROM marry_marriages m
+        INNER JOIN marry_players p1 ON m.player1_uuid = p1.uuid
+        INNER JOIN marry_players p2 ON m.player2_uuid = p2.uuid
+        WHERE (m.player1_uuid = ? OR m.player2_uuid = ?)
+        AND m.status IN ('novio', 'comprometido', 'casado')
+        ORDER BY m.updated_at DESC
+        LIMIT 1
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setString(1, playerUuid.toString());
+            stmt.setString(2, playerUuid.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("id", rs.getInt("id"));
+                    info.put("player1_uuid", rs.getString("player1_uuid"));
+                    info.put("player2_uuid", rs.getString("player2_uuid"));
+                    info.put("player1_name", rs.getString("player1_name"));
+                    info.put("player2_name", rs.getString("player2_name"));
+                    info.put("status", rs.getString("status"));
+                    info.put("engagement_date", rs.getTimestamp("engagement_date"));
+                    info.put("wedding_date", rs.getTimestamp("wedding_date"));
+                    info.put("ceremony_location", rs.getString("ceremony_location"));
+                    info.put("created_at", rs.getTimestamp("created_at"));
+                    info.put("updated_at", rs.getTimestamp("updated_at"));
+                    return info;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * NUEVO MÉTODO: Sincroniza el estado del jugador con los registros de matrimonio
      */
@@ -711,20 +806,21 @@ public class DatabaseManager {
     }
 
     /**
-     * Obtiene estadísticas generales del sistema
+     * ACTUALIZADO: Obtiene estadísticas del sistema incluyendo novios
      *
-     * @return Array con [total_jugadores, total_solteros, total_comprometidos, total_casados]
+     * @return Array con [total_jugadores, total_solteros, total_novios, total_comprometidos, total_casados]
      * @throws SQLException Si hay error en la base de datos
      */
     public int[] getSystemStats() throws SQLException {
         String query = """
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'soltero' THEN 1 ELSE 0 END) as solteros,
-                SUM(CASE WHEN status = 'comprometido' THEN 1 ELSE 0 END) as comprometidos,
-                SUM(CASE WHEN status = 'casado' THEN 1 ELSE 0 END) as casados
-            FROM marry_players
-        """;
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'soltero' THEN 1 ELSE 0 END) as solteros,
+            SUM(CASE WHEN status = 'novio' THEN 1 ELSE 0 END) as novios,
+            SUM(CASE WHEN status = 'comprometido' THEN 1 ELSE 0 END) as comprometidos,
+            SUM(CASE WHEN status = 'casado' THEN 1 ELSE 0 END) as casados
+        FROM marry_players
+    """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
             try (ResultSet rs = stmt.executeQuery()) {
@@ -732,6 +828,7 @@ public class DatabaseManager {
                     return new int[]{
                             rs.getInt("total"),
                             rs.getInt("solteros"),
+                            rs.getInt("novios"),
                             rs.getInt("comprometidos"),
                             rs.getInt("casados")
                     };
@@ -739,11 +836,76 @@ public class DatabaseManager {
             }
         }
 
-        return new int[]{0, 0, 0, 0};
+        return new int[]{0, 0, 0, 0, 0};
     }
 
     /**
-     * Verifica la integridad de la base de datos y repara inconsistencias
+     * NUEVO: Obtiene la fecha de inicio de una relación
+     *
+     * @param playerUuid UUID del jugador
+     * @return Timestamp de cuando inició la relación actual
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public Timestamp getRelationshipStartDate(UUID playerUuid) throws SQLException {
+        String query = """
+        SELECT engagement_date FROM marry_marriages 
+        WHERE (player1_uuid = ? OR player2_uuid = ?) 
+        AND status IN ('novio', 'comprometido', 'casado')
+        ORDER BY engagement_date ASC 
+        LIMIT 1
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setString(1, playerUuid.toString());
+            stmt.setString(2, playerUuid.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getTimestamp("engagement_date");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * NUEVO: Verifica si dos jugadores pueden avanzar en su relación
+     *
+     * @param player1Uuid UUID del primer jugador
+     * @param player2Uuid UUID del segundo jugador
+     * @return true si pueden avanzar al siguiente nivel de relación
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public boolean canAdvanceRelationship(UUID player1Uuid, UUID player2Uuid) throws SQLException {
+        String query = """
+        SELECT status FROM marry_marriages 
+        WHERE (player1_uuid = ? AND player2_uuid = ?) OR (player1_uuid = ? AND player2_uuid = ?) 
+        AND status IN ('novio', 'comprometido')
+        ORDER BY updated_at DESC
+        LIMIT 1
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(query)) {
+            stmt.setString(1, player1Uuid.toString());
+            stmt.setString(2, player2Uuid.toString());
+            stmt.setString(3, player2Uuid.toString());
+            stmt.setString(4, player1Uuid.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String status = rs.getString("status");
+                    MaritalStatus currentStatus = MaritalStatus.fromDatabase(status);
+                    return currentStatus.canAdvance();
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ACTUALIZADO: Repara la base de datos incluyendo estado de novio
      *
      * @return Número de registros reparados
      * @throws SQLException Si hay error en la base de datos
@@ -751,20 +913,43 @@ public class DatabaseManager {
     public int repairDatabase() throws SQLException {
         int repairedCount = 0;
 
-        // Reparar referencias de parejas rotas
+        // Reparar referencias de parejas rotas incluyendo novios
         String repairQuery = """
-            UPDATE marry_players p1 
-            SET partner_uuid = NULL, status = 'soltero' 
-            WHERE partner_uuid IS NOT NULL 
-            AND NOT EXISTS (
-                SELECT 1 FROM marry_players p2 
-                WHERE p2.uuid = p1.partner_uuid 
-                AND p2.partner_uuid = p1.uuid
-            )
-        """;
+        UPDATE marry_players p1 
+        SET partner_uuid = NULL, status = 'soltero' 
+        WHERE partner_uuid IS NOT NULL 
+        AND NOT EXISTS (
+            SELECT 1 FROM marry_players p2 
+            WHERE p2.uuid = p1.partner_uuid 
+            AND p2.partner_uuid = p1.uuid
+        )
+    """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(repairQuery)) {
             repairedCount = stmt.executeUpdate();
+        }
+
+        // Reparar estados inconsistentes con registros de matrimonio
+        String syncQuery = """
+        UPDATE marry_players p
+        SET status = (
+            SELECT m.status 
+            FROM marry_marriages m 
+            WHERE (m.player1_uuid = p.uuid OR m.player2_uuid = p.uuid)
+            AND m.status IN ('novio', 'comprometido', 'casado')
+            ORDER BY m.updated_at DESC
+            LIMIT 1
+        )
+        WHERE EXISTS (
+            SELECT 1 FROM marry_marriages m 
+            WHERE (m.player1_uuid = p.uuid OR m.player2_uuid = p.uuid)
+            AND m.status IN ('novio', 'comprometido', 'casado')
+            AND m.status != p.status
+        )
+    """;
+
+        try (PreparedStatement stmt = getConnection().prepareStatement(syncQuery)) {
+            repairedCount += stmt.executeUpdate();
         }
 
         return repairedCount;
@@ -1202,6 +1387,103 @@ public class DatabaseManager {
         long timeSinceLastDivorce = System.currentTimeMillis() - lastDivorce.getTime();
 
         return timeSinceLastDivorce >= cooldownMs;
+    }
+
+    /**
+     * Crea una relación de noviazgo entre dos jugadores
+     *
+     * @param player1Uuid UUID del primer jugador
+     * @param player2Uuid UUID del segundo jugador
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public void createRelationship(UUID player1Uuid, UUID player2Uuid) throws SQLException {
+        Connection conn = getConnection();
+
+        try {
+            conn.setAutoCommit(false); // Iniciar transacción
+
+            // Actualizar estado de ambos jugadores a novio
+            updatePlayerStatus(player1Uuid, MaritalStatus.NOVIO);
+            updatePlayerStatus(player2Uuid, MaritalStatus.NOVIO);
+
+            // Establecer parejas
+            updatePlayerPartner(player1Uuid, player2Uuid);
+            updatePlayerPartner(player2Uuid, player1Uuid);
+
+            // Crear registro en tabla de matrimonios con estado 'novio'
+            String relationshipQuery = """
+            INSERT INTO marry_marriages (player1_uuid, player2_uuid, status, engagement_date, created_at, updated_at) 
+            VALUES (?, ?, 'novio', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """;
+
+            try (PreparedStatement stmt = conn.prepareStatement(relationshipQuery)) {
+                stmt.setString(1, player1Uuid.toString());
+                stmt.setString(2, player2Uuid.toString());
+
+                int rowsInserted = stmt.executeUpdate();
+
+                if (rowsInserted == 0) {
+                    throw new SQLException("No se pudo crear el registro de relación en la base de datos");
+                }
+
+                plugin.getLogger().info("Relación de noviazgo registrada correctamente en la base de datos");
+            }
+
+            conn.commit(); // Confirmar transacción
+
+        } catch (SQLException e) {
+            conn.rollback(); // Revertir en caso de error
+            throw e;
+        } finally {
+            conn.setAutoCommit(true); // Restaurar auto-commit
+        }
+    }
+
+    /**
+     * Termina una relación de noviazgo entre dos jugadores
+     *
+     * @param player1Uuid UUID del primer jugador
+     * @param player2Uuid UUID del segundo jugador
+     * @throws SQLException Si hay error en la base de datos
+     */
+    public void endRelationship(UUID player1Uuid, UUID player2Uuid) throws SQLException {
+        Connection conn = getConnection();
+
+        try {
+            conn.setAutoCommit(false); // Iniciar transacción
+
+            // Actualizar estado de ambos jugadores a soltero
+            updatePlayerStatus(player1Uuid, MaritalStatus.SOLTERO);
+            updatePlayerStatus(player2Uuid, MaritalStatus.SOLTERO);
+
+            // Remover parejas
+            updatePlayerPartner(player1Uuid, null);
+            updatePlayerPartner(player2Uuid, null);
+
+            // Actualizar registro de relación
+            String relationshipQuery = """
+            UPDATE marry_marriages 
+            SET status = 'terminado', divorce_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+            WHERE (player1_uuid = ? AND player2_uuid = ?) OR (player1_uuid = ? AND player2_uuid = ?) 
+            AND status = 'novio'
+        """;
+
+            try (PreparedStatement stmt = conn.prepareStatement(relationshipQuery)) {
+                stmt.setString(1, player1Uuid.toString());
+                stmt.setString(2, player2Uuid.toString());
+                stmt.setString(3, player2Uuid.toString());
+                stmt.setString(4, player1Uuid.toString());
+                stmt.executeUpdate();
+            }
+
+            conn.commit(); // Confirmar transacción
+
+        } catch (SQLException e) {
+            conn.rollback(); // Revertir en caso de error
+            throw e;
+        } finally {
+            conn.setAutoCommit(true); // Restaurar auto-commit
+        }
     }
 
     /**
