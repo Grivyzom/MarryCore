@@ -1,32 +1,40 @@
 name: MarryCore
-version: '0.0.1'
+version: '0.1.0'
 main: gc.grivyzom.marryCore.MarryCore
 api-version: '1.20'
 authors: [ Brocolitx ]
 website: www.grivyzom.com
-description: Sistema completo de matrimonio para servidores de Minecraft Survival
+description: Sistema completo de matrimonio con noviazgo para servidores de Minecraft Survival
 softdepend: [PlaceholderAPI, LuckPerms, Vault, WorldGuard]
 
 commands:
+  # NUEVO: Comando de noviazgo
+  novio:
+    description: Comando para el sistema de noviazgo
+    aliases: [dating, salir, novia]
+    usage: /novio <jugador|terminar|info|ayuda> - Gestionar relaciones de noviazgo
+    permission: marrycore.dating
+    permission-message: §cNo tienes permisos para usar este comando.
+
   marry:
-    description: Comando principal para el sistema de matrimonio
-    aliases: [casarse, matrimonio]
-    usage: /marry <jugador> - Proponer matrimonio a un jugador
+    description: Comando principal para el sistema de matrimonio (ahora para compromiso)
+    aliases: [casarse, matrimonio, compromiso]
+    usage: /marry <jugador|info|avanzar|gift|tp|flores> - Proponer compromiso o gestionar relación
     permission: marrycore.marry
     permission-message: §cNo tienes permisos para usar este comando.
 
   aceptar:
-    description: Aceptar propuesta de matrimonio
+    description: Aceptar propuesta de matrimonio o noviazgo
     aliases: [accept, si, yes]
-    usage: /aceptar - Aceptar propuesta de matrimonio pendiente
-    permission: marrycore.marry
+    usage: /aceptar - Aceptar propuesta pendiente
+    permission: marrycore.accept
     permission-message: §cNo tienes permisos para usar este comando.
 
   rechazar:
-    description: Rechazar propuesta de matrimonio
+    description: Rechazar propuesta de matrimonio o noviazgo
     aliases: [reject, no]
-    usage: /rechazar - Rechazar propuesta de matrimonio pendiente
-    permission: marrycore.marry
+    usage: /rechazar - Rechazar propuesta pendiente
+    permission: marrycore.reject
     permission-message: §cNo tienes permisos para usar este comando.
 
   casamiento:
@@ -69,16 +77,64 @@ permissions:
     description: Acceso completo a todas las funciones de MarryCore
     default: op
     children:
+      marrycore.dating: true
       marrycore.marry: true
+      marrycore.accept: true
+      marrycore.reject: true
       marrycore.wedding: true
       marrycore.guests: true
       marrycore.divorce: true
       marrycore.teleport: true
       marrycore.admin: true
       marrycore.bypass: true
+      marrycore.progression: true
 
+  # NUEVO: Permisos para noviazgo
+  marrycore.dating:
+    description: Permite proponer noviazgo y gestionar relaciones casuales
+    default: true
+
+  marrycore.dating.*:
+    description: Todos los permisos de noviazgo
+    default: true
+    children:
+      marrycore.dating.propose: true
+      marrycore.dating.accept: true
+      marrycore.dating.reject: true
+      marrycore.dating.breakup: true
+      marrycore.dating.info: true
+
+  marrycore.dating.propose:
+    description: Permite proponer noviazgo a otros jugadores
+    default: true
+
+  marrycore.dating.accept:
+    description: Permite aceptar propuestas de noviazgo
+    default: true
+
+  marrycore.dating.reject:
+    description: Permite rechazar propuestas de noviazgo
+    default: true
+
+  marrycore.dating.breakup:
+    description: Permite terminar relaciones de noviazgo
+    default: true
+
+  marrycore.dating.info:
+    description: Permite ver información de relaciones
+    default: true
+
+  # ACTUALIZADOS: Permisos de matrimonio
   marrycore.marry:
-    description: Permite proponer matrimonio y aceptar/rechazar propuestas
+    description: Permite proponer compromiso y gestionar matrimonios
+    default: true
+
+  marrycore.accept:
+    description: Permite aceptar propuestas de compromiso y matrimonio
+    default: true
+
+  marrycore.reject:
+    description: Permite rechazar propuestas de compromiso y matrimonio
     default: true
 
   marrycore.wedding:
@@ -94,9 +150,26 @@ permissions:
     default: true
 
   marrycore.teleport:
-    description: Permite teletransportarse al cónyuge
+    description: Permite teletransportarse al cónyuge/pareja
     default: true
 
+  # NUEVO: Permisos de progresión
+  marrycore.progression:
+    description: Permite acceder al sistema de progresión de relaciones
+    default: true
+    children:
+      marrycore.progression.advance: true
+      marrycore.progression.achievements: true
+
+  marrycore.progression.advance:
+    description: Permite avanzar en las etapas de relación
+    default: true
+
+  marrycore.progression.achievements:
+    description: Permite recibir logros de relación
+    default: true
+
+  # ACTUALIZADOS: Permisos administrativos
   marrycore.admin:
     description: Comandos administrativos del sistema de matrimonio
     default: op
@@ -107,13 +180,44 @@ permissions:
       marrycore.admin.reset: true
       marrycore.admin.stats: true
       marrycore.admin.repair: true
+      marrycore.admin.dating: true
 
   marrycore.admin.reload:
     description: Permite recargar la configuración del plugin
     default: op
 
   marrycore.admin.force:
-    description: Permite forzar matrimonios y divorcios
+    description: Permite forzar matrimonios, compromisos y noviazgos
+    default: op
+
+  marrycore.admin.force.*:
+    description: Todos los permisos de forzar relaciones
+    default: op
+    children:
+      marrycore.admin.force.dating: true
+      marrycore.admin.force.engagement: true
+      marrycore.admin.force.marriage: true
+      marrycore.admin.force.breakup: true
+      marrycore.admin.force.divorce: true
+
+  marrycore.admin.force.dating:
+    description: Permite forzar relaciones de noviazgo
+    default: op
+
+  marrycore.admin.force.engagement:
+    description: Permite forzar compromisos
+    default: op
+
+  marrycore.admin.force.marriage:
+    description: Permite forzar matrimonios
+    default: op
+
+  marrycore.admin.force.breakup:
+    description: Permite forzar rupturas
+    default: op
+
+  marrycore.admin.force.divorce:
+    description: Permite forzar divorcios
     default: op
 
   marrycore.admin.give:
@@ -132,6 +236,11 @@ permissions:
     description: Permite reparar la base de datos
     default: op
 
+  marrycore.admin.dating:
+    description: Permite comandos administrativos específicos de noviazgo
+    default: op
+
+  # ACTUALIZADOS: Permisos de bypass
   marrycore.bypass:
     description: Permite saltarse restricciones como cooldowns y límites
     default: op
@@ -139,19 +248,25 @@ permissions:
       marrycore.bypass.cooldown: true
       marrycore.bypass.distance: true
       marrycore.bypass.limits: true
+      marrycore.bypass.progression: true
 
   marrycore.bypass.cooldown:
-    description: Permite saltarse cooldowns de teletransporte
+    description: Permite saltarse cooldowns de teletransporte y propuestas
     default: op
 
   marrycore.bypass.distance:
-    description: Permite proponer matrimonio sin restricción de distancia
+    description: Permite proponer sin restricción de distancia
     default: op
 
   marrycore.bypass.limits:
     description: Permite saltarse límites de propuestas diarias
     default: op
 
+  marrycore.bypass.progression:
+    description: Permite saltarse los requisitos de progresión de relaciones
+    default: op
+
+  # PERMISOS DE CRAFT
   marrycore.craft:
     description: Permite craftear ítems especiales del matrimonio
     default: true
@@ -160,32 +275,112 @@ permissions:
     description: Permite craftear anillos de propuesta
     default: true
 
+  # ACTUALIZADOS: Permisos de beneficios por etapa
   marrycore.benefits:
-    description: Acceso a beneficios del matrimonio
+    description: Acceso a beneficios de relaciones
     default: true
     children:
-      marrycore.benefits.experience: true
-      marrycore.benefits.chat: true
-      marrycore.benefits.missions: true
+      marrycore.benefits.dating: true
+      marrycore.benefits.engaged: true
+      marrycore.benefits.married: true
 
-  marrycore.benefits.experience:
-    description: Permite recibir bonus de experiencia por estar casado
+  marrycore.benefits.dating:
+    description: Permite acceder a beneficios de noviazgo
+    default: true
+    children:
+    marrycore.benefits.dating.teleport:
+      description: Permite teletransporte básico durante el noviazgo
+      default: true
+
+  marrycore.benefits.dating.chat:
+    description: Permite usar chat privado durante el noviazgo
     default: true
 
-  marrycore.benefits.chat:
-    description: Permite usar el chat privado entre cónyuges
+  marrycore.benefits.dating.gifts:
+    description: Permite intercambiar regalos durante el noviazgo
     default: true
 
-  marrycore.benefits.missions:
+  marrycore.benefits.dating.experience:
+    description: Permite recibir bonus de experiencia durante el noviazgo
+    default: true
+
+  marrycore.benefits.engaged:
+    description: Permite acceder a beneficios de compromiso
+    default: true
+    children:
+      marrycore.benefits.engaged.teleport: true
+      marrycore.benefits.engaged.chat: true
+      marrycore.benefits.engaged.gifts: true
+      marrycore.benefits.engaged.experience: true
+      marrycore.benefits.engaged.wedding: true
+
+  marrycore.benefits.engaged.teleport:
+    description: Permite teletransporte mejorado durante el compromiso
+    default: true
+
+  marrycore.benefits.engaged.chat:
+    description: Permite usar chat privado mejorado durante el compromiso
+    default: true
+
+  marrycore.benefits.engaged.gifts:
+    description: Permite intercambiar regalos mejorados durante el compromiso
+    default: true
+
+  marrycore.benefits.engaged.experience:
+    description: Permite recibir bonus de experiencia mejorado durante el compromiso
+    default: true
+
+  marrycore.benefits.engaged.wedding:
+    description: Permite programar y gestionar ceremonias de boda
+    default: true
+
+  marrycore.benefits.married:
+    description: Permite acceder a todos los beneficios de matrimonio
+    default: true
+    children:
+      marrycore.benefits.married.teleport: true
+      marrycore.benefits.married.chat: true
+      marrycore.benefits.married.gifts: true
+      marrycore.benefits.married.experience: true
+      marrycore.benefits.married.missions: true
+
+  marrycore.benefits.married.teleport:
+    description: Permite teletransporte completo durante el matrimonio
+    default: true
+
+  marrycore.benefits.married.chat:
+    description: Permite usar chat privado completo durante el matrimonio
+    default: true
+
+  marrycore.benefits.married.gifts:
+    description: Permite intercambiar cualquier regalo durante el matrimonio
+    default: true
+
+  marrycore.benefits.married.experience:
+    description: Permite recibir bonus máximo de experiencia durante el matrimonio
+    default: true
+
+  marrycore.benefits.married.missions:
     description: Permite acceder a misiones diarias de pareja
     default: true
 
+  # PERMISOS DE NOTIFICACIONES
   marrycore.notify:
     description: Permite recibir notificaciones del sistema
     default: true
+    children:
+      marrycore.notify.proposals: true
+      marrycore.notify.relationships: true
+      marrycore.notify.weddings: true
+      marrycore.notify.divorces: true
+      marrycore.notify.achievements: true
 
   marrycore.notify.proposals:
     description: Permite recibir notificaciones de propuestas
+    default: true
+
+  marrycore.notify.relationships:
+    description: Permite recibir notificaciones de relaciones (noviazgo)
     default: true
 
   marrycore.notify.weddings:
@@ -193,5 +388,148 @@ permissions:
     default: true
 
   marrycore.notify.divorces:
-    description: Permite recibir notificaciones de divorcios
+    description: Permite recibir notificaciones de divorcios/rupturas
     default: true
+
+  marrycore.notify.achievements:
+    description: Permite recibir notificaciones de logros
+    default: true
+
+  # PERMISOS DE INTERACCIÓN
+  marrycore.interact:
+    description: Permite interacciones especiales con la pareja
+    default: true
+    children:
+      marrycore.interact.kiss: true
+      marrycore.interact.flowers: true
+      marrycore.interact.gifts: true
+
+  marrycore.interact.kiss:
+    description: Permite besar a la pareja (Shift + Click)
+    default: true
+
+  marrycore.interact.flowers:
+    description: Permite regalar flores con efectos especiales
+    default: true
+
+  marrycore.interact.gifts:
+    description: Permite hacer regalos especiales a la pareja
+    default: true
+
+  # PERMISOS DE EDAD DE RELACIÓN
+  marrycore.relationship:
+    description: Permisos base para gestionar relaciones
+    default: true
+    children:
+      marrycore.relationship.start: true
+      marrycore.relationship.advance: true
+      marrycore.relationship.end: true
+      marrycore.relationship.info: true
+
+  marrycore.relationship.start:
+    description: Permite iniciar nuevas relaciones
+    default: true
+
+  marrycore.relationship.advance:
+    description: Permite avanzar en las etapas de relación
+    default: true
+
+  marrycore.relationship.end:
+    description: Permite terminar relaciones
+    default: true
+
+  marrycore.relationship.info:
+    description: Permite ver información de relaciones
+    default: true
+
+  # PERMISOS ESPECÍFICOS POR COMANDO
+  marrycore.command:
+    description: Permisos base para comandos
+    default: true
+    children:
+      marrycore.command.novio: true
+      marrycore.command.marry: true
+      marrycore.command.aceptar: true
+      marrycore.command.rechazar: true
+      marrycore.command.casamiento: true
+      marrycore.command.invitados: true
+      marrycore.command.divorcio: true
+      marrycore.command.conyuge: true
+
+  marrycore.command.novio:
+    description: Permite usar el comando /novio
+    default: true
+
+  marrycore.command.marry:
+    description: Permite usar el comando /marry
+    default: true
+
+  marrycore.command.aceptar:
+    description: Permite usar el comando /aceptar
+    default: true
+
+  marrycore.command.rechazar:
+    description: Permite usar el comando /rechazar
+    default: true
+
+  marrycore.command.casamiento:
+    description: Permite usar el comando /casamiento
+    default: true
+
+  marrycore.command.invitados:
+    description: Permite usar el comando /invitados
+    default: true
+
+  marrycore.command.divorcio:
+    description: Permite usar el comando /divorcio
+    default: true
+
+  marrycore.command.conyuge:
+    description: Permite usar el comando /conyuge
+    default: true
+
+  # PERMISOS DE LÍMITES Y RESTRICCIONES
+  marrycore.limits:
+    description: Permisos relacionados con límites del sistema
+    default: true
+    children:
+      marrycore.limits.proposals: true
+      marrycore.limits.relationships: true
+      marrycore.limits.gifts: true
+
+  marrycore.limits.proposals:
+    description: Sujeto a límites de propuestas diarias
+    default: true
+
+  marrycore.limits.relationships:
+    description: Sujeto a límites de relaciones
+    default: true
+
+  marrycore.limits.gifts:
+    description: Sujeto a límites de regalos
+    default: true
+
+  # PERMISOS VIP/PREMIUM (para futuras extensiones)
+  marrycore.vip:
+    description: Beneficios VIP para el sistema de matrimonio
+    default: false
+    children:
+      marrycore.vip.bypass_cooldowns: true
+      marrycore.vip.extra_benefits: true
+      marrycore.vip.special_effects: true
+
+  marrycore.vip.bypass_cooldowns:
+    description: Permite saltarse algunos cooldowns (VIP)
+    default: false
+
+  marrycore.vip.extra_benefits:
+    description: Permite acceder a beneficios extra (VIP)
+    default: false
+
+  marrycore.vip.special_effects:
+    description: Permite efectos especiales mejorados (VIP)
+    default: false
+    children:
+      marrycore.benefits.dating.chat: true
+      marrycore.benefits.dating.gifts: true
+      marrycore.benefits.dating.experience: true

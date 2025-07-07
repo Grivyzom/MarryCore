@@ -1389,6 +1389,8 @@ public class DatabaseManager {
         return timeSinceLastDivorce >= cooldownMs;
     }
 
+
+
     /**
      * Crea una relación de noviazgo entre dos jugadores
      *
@@ -1485,7 +1487,6 @@ public class DatabaseManager {
             conn.setAutoCommit(true); // Restaurar auto-commit
         }
     }
-
     /**
      * Obtiene información completa de un matrimonio
      *

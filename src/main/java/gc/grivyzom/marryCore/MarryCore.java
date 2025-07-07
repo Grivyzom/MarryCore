@@ -310,8 +310,17 @@ public final class MarryCore extends JavaPlugin {
         }
     }
 
+// ACTUALIZAR el método registerCommands() en MarryCore.java
+
     private void registerCommands() {
         try {
+            // NUEVO: Registrar comando de noviazgo
+            if (getCommand("novio") != null) {
+                getCommand("novio").setExecutor(new DatingCommand(this));
+            } else {
+                getLogger().warning("Comando 'novio' no encontrado en plugin.yml");
+            }
+
             // Verificar que los comandos estén definidos en plugin.yml
             if (getCommand("marry") != null) {
                 getCommand("marry").setExecutor(new MarryCommand(this));
@@ -349,7 +358,7 @@ public final class MarryCore extends JavaPlugin {
                 getLogger().warning("Comando 'marrycore' no encontrado en plugin.yml");
             }
 
-            getLogger().info("Comandos registrados correctamente");
+            getLogger().info("Comandos registrados correctamente (incluido comando de noviazgo)");
         } catch (Exception e) {
             getLogger().severe("Error al registrar comandos: " + e.getMessage());
             throw e;

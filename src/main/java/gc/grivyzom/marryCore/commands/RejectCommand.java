@@ -8,10 +8,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
- * Comando para rechazar propuestas de matrimonio.
+ * Comando para rechazar propuestas de matrimonio y noviazgo.
+ * ACTUALIZADO: Ahora maneja ambos tipos de propuestas.
  *
  * @author Brocolitx
- * @version 0.0.1
+ * @version 0.1.0
  */
 public class RejectCommand implements CommandExecutor {
 
@@ -34,18 +35,25 @@ public class RejectCommand implements CommandExecutor {
         Player player = (Player) sender;
 
         // Verificar permisos
-        if (!player.hasPermission("marrycore.marry")) {
+        if (!player.hasPermission("marrycore.marry") && !player.hasPermission("marrycore.dating")) {
             messageUtils.sendMessage(player, "general.no-permission");
             return true;
         }
 
-        // Intentar rechazar la propuesta
-        boolean success = MarryCommand.rejectProposal(player);
-
-        if (!success) {
-            messageUtils.sendMessage(player, "marriage.reject.no-proposal");
+        // ACTUALIZADO: Intentar rechazar propuesta de noviazgo primero
+        boolean datingSuccess = DatingCommand.rejectDatingProposal(player, plugin);
+        if (datingSuccess) {
+            return true; // Se rechazó una propuesta de noviazgo
         }
 
+        // Si no había propuesta de noviazgo, intentar propuesta de matrimonio
+        boolean marriageSuccess = MarryCommand.rejectProposal(player);
+        if (marriageSuccess) {
+            return true; // Se rechazó una propuesta de matrimonio/compromiso
+        }
+
+        // Si no había ninguna propuesta pendiente
+        messageUtils.sendMessage(player, "marriage.reject.no-proposal");
         return true;
     }
 }

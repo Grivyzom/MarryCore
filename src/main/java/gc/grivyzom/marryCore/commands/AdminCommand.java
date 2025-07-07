@@ -57,6 +57,14 @@ public class AdminCommand implements CommandExecutor {
                 forceEngagement(sender, args[1], args[2]);
                 break;
 
+            case "forcedating":
+                if (args.length < 3) {
+                    sender.sendMessage("§cUso: /marrycore forcedating <jugador1> <jugador2>");
+                    return true;
+                }
+                forceDating(sender, args[1], args[2]);
+                break;
+
             case "forcemarry":
                 if (args.length < 3) {
                     sender.sendMessage("§cUso: /marrycore forcemarry <jugador1> <jugador2>");
@@ -142,6 +150,46 @@ public class AdminCommand implements CommandExecutor {
         }
 
         return true;
+    }
+
+    private void forceDating(CommandSender sender, String player1Name, String player2Name) {
+        Player player1 = Bukkit.getPlayer(player1Name);
+        Player player2 = Bukkit.getPlayer(player2Name);
+
+        if (player1 == null || player2 == null) {
+            sender.sendMessage("§cUno o ambos jugadores no están conectados.");
+            return;
+        }
+
+        if (player1.equals(player2)) {
+            sender.sendMessage("§cNo puedes poner a un jugador en relación consigo mismo.");
+            return;
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                // Crear relación de noviazgo
+                plugin.getDatabaseManager().createRelationship(player1.getUniqueId(), player2.getUniqueId());
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    sender.sendMessage("§a¡Has forzado el noviazgo entre " + player1.getName() + " y " + player2.getName() + "!");
+
+                    messageUtils.sendMessage(player1, "admin.force-dating.notification",
+                            "{player}", player2.getName());
+                    messageUtils.sendMessage(player2, "admin.force-dating.notification",
+                            "{player}", player1.getName());
+
+                    plugin.getLogger().info("Noviazgo forzado por " + sender.getName() + ": " + player1.getName() + " <-> " + player2.getName());
+                });
+
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error al forzar noviazgo: " + e.getMessage());
+                e.printStackTrace();
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    sender.sendMessage("§cError al forzar el noviazgo: " + e.getMessage());
+                });
+            }
+        });
     }
 
     private void reloadPlugin(CommandSender sender) {
@@ -762,6 +810,7 @@ public class AdminCommand implements CommandExecutor {
     private void showHelp(CommandSender sender) {
         sender.sendMessage("§a§l====== COMANDOS ADMINISTRATIVOS MARRYCORE ======");
         sender.sendMessage("§e/marrycore reload §7- Recargar configuración");
+        sender.sendMessage("§e/marrycore forcedating <p1> <p2> §7- Forzar noviazgo");  // NUEVO
         sender.sendMessage("§e/marrycore forceengage <p1> <p2> §7- Forzar compromiso");
         sender.sendMessage("§e/marrycore forcemarry <p1> <p2> §7- Forzar matrimonio");
         sender.sendMessage("§e/marrycore forcedivorce <jugador> §7- Forzar divorcio");
